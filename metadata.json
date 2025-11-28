@@ -1,0 +1,5 @@
+{
+  "name": "PuntoNet Desk",
+  "description": "A complete Service Desk application featuring Login, 2FA, Dashboard, Ticket Management, and Ticket Details views.",
+  "requestFramePermissions": []
+}
