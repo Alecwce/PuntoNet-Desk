@@ -1,24 +1,45 @@
-import React from 'react';
-import { MOCK_TICKETS } from '../constants';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../components/Icon';
+import { CreateTicketModal } from '../components/CreateTicketModal';
+import { ExportTicketsModal } from '../components/ExportTicketsModal';
+import { DeleteConfirmationModal } from '../components/DeleteConfirmationModal';
+import { Ticket } from '../types';
 
 interface TicketListProps {
+  tickets: Ticket[];
   onTicketSelect: (id: string) => void;
-  onNewTicket: () => void;
+  onCreateTicket: (data: { subject: string; priority: string; description: string }) => void;
+  onEditTicket: (id: string, data: { subject: string; priority: string; description: string }) => void;
+  onDeleteTicket: (id: string) => void;
 }
 
-export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTicket }) => {
-  
-  const getProgressWidth = (status: string) => {
-    switch(status) {
-      case 'Abierto': return 'w-1/4';
-      case 'En Progreso': return 'w-2/4';
-      case 'Resuelto': return 'w-3/4';
-      case 'Cerrado': return 'w-full';
-      default: return 'w-0';
-    }
-  };
+export const TicketList: React.FC<TicketListProps> = ({ 
+  tickets, 
+  onTicketSelect, 
+  onCreateTicket,
+  onEditTicket,
+  onDeleteTicket
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [activeMenuTicketId, setActiveMenuTicketId] = useState<string | null>(null);
+  const [ticketToEdit, setTicketToEdit] = useState<Ticket | null>(null);
+  const [ticketToDeleteId, setTicketToDeleteId] = useState<string | null>(null);
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (activeMenuTicketId && !(event.target as Element).closest('.action-menu-trigger')) {
+        setActiveMenuTicketId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeMenuTicketId]);
+  
   const getStatusSegments = (status: string) => {
       // 0: Open, 1: Progress, 2: Resolved, 3: Closed
       const stages = ['Abierto', 'En Progreso', 'Resuelto', 'Cerrado'];
@@ -34,7 +55,6 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
                     } border-r border-white/20 last:border-0 hover:bg-primary/80`}
                     title={stage}
                   >
-                      {/* Only show text on hover or if it's the current active one (optional design choice, keeping clean per screenshot) */}
                       <span className={`${idx === currentIndex ? 'block' : 'hidden group-hover:block'} truncate px-1`}>
                           {stage}
                       </span>
@@ -43,6 +63,42 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
           </div>
       )
   }
+
+  const handleCreateTicket = (data: { subject: string; priority: string; description: string }) => {
+    onCreateTicket(data);
+  };
+
+  const handleEditClick = (e: React.MouseEvent, ticket: Ticket) => {
+    e.stopPropagation(); // Prevent row click
+    setTicketToEdit(ticket);
+    setIsModalOpen(true);
+    setActiveMenuTicketId(null);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // Prevent row click
+    setTicketToDeleteId(id);
+    setIsDeleteModalOpen(true);
+    setActiveMenuTicketId(null);
+  };
+
+  const confirmDelete = () => {
+    if (ticketToDeleteId) {
+      onDeleteTicket(ticketToDeleteId);
+      setIsDeleteModalOpen(false);
+      setTicketToDeleteId(null);
+    }
+  };
+
+  const toggleMenu = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setActiveMenuTicketId(activeMenuTicketId === id ? null : id);
+  };
+
+  const handleOpenCreateModal = () => {
+    setTicketToEdit(null); // Ensure we are in create mode
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="p-8 flex flex-col gap-6">
@@ -61,12 +117,15 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
           </label>
         </div>
         <div className="flex items-center gap-3">
-          <button className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-DEFAULT bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors text-gray-700 dark:text-gray-200">
+          <button 
+            onClick={() => setIsExportModalOpen(true)}
+            className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-DEFAULT bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors text-gray-700 dark:text-gray-200"
+          >
             <Icon name="ios_share" className="text-gray-600 dark:text-gray-300" />
             <p className="text-sm font-medium leading-normal">Exportar</p>
           </button>
           <button 
-            onClick={onNewTicket}
+            onClick={handleOpenCreateModal}
             className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-DEFAULT bg-primary px-4 text-white hover:bg-primary/90 shadow-sm transition-colors"
           >
             <Icon name="add" />
@@ -102,8 +161,9 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 shadow-sm">
-         <div className="overflow-x-auto">
+      {/* Table Container */}
+      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 shadow-sm relative">
+         <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800/50">
                 <tr>
@@ -119,7 +179,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {MOCK_TICKETS.map((ticket) => (
+                {tickets.map((ticket) => (
                 <tr key={ticket.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                     <td className="px-4 py-3 w-12"><input className="h-4 w-4 rounded border-gray-300 bg-transparent text-primary focus:ring-primary/50" type="checkbox"/></td>
                     <td 
@@ -148,10 +208,35 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
                         </div>
                     </td>
                     <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{ticket.lastUpdate}</td>
-                    <td className="px-4 py-3">
-                        <button className="text-gray-400 hover:text-gray-600 dark:hover:text-white">
+                    <td className="px-4 py-3 relative">
+                        <button 
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-white action-menu-trigger p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                            onClick={(e) => toggleMenu(e, ticket.id)}
+                        >
                             <Icon name="more_vert" />
                         </button>
+                        
+                        {/* Dropdown Menu */}
+                        {activeMenuTicketId === ticket.id && (
+                            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                                <div className="py-1">
+                                    <button 
+                                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 gap-2"
+                                        onClick={(e) => handleEditClick(e, ticket)}
+                                    >
+                                        <Icon name="edit" className="text-gray-500 text-base" />
+                                        Editar
+                                    </button>
+                                    <button 
+                                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 gap-2"
+                                        onClick={(e) => handleDeleteClick(e, ticket.id)}
+                                    >
+                                        <Icon name="delete" className="text-base" />
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </td>
                 </tr>
                 ))}
@@ -159,6 +244,25 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect, onNewTic
             </table>
          </div>
       </div>
+      
+      <CreateTicketModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onCreate={handleCreateTicket}
+        onEdit={onEditTicket}
+        ticketToEdit={ticketToEdit}
+      />
+
+      <ExportTicketsModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };

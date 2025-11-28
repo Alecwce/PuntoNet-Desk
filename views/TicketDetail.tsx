@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
-import { MOCK_TICKETS, CURRENT_USER } from '../constants';
 import { Icon } from '../components/Icon';
 import { Ticket } from '../types';
 
 interface TicketDetailProps {
   ticketId: string;
+  tickets: Ticket[]; // Receive tickets from parent
   onBack: () => void;
 }
 
-export const TicketDetail: React.FC<TicketDetailProps> = ({ ticketId, onBack }) => {
-  // In a real app, use useMemo or useEffect to fetch
-  const ticket: Ticket = MOCK_TICKETS.find(t => t.id === ticketId) || MOCK_TICKETS[0];
+export const TicketDetail: React.FC<TicketDetailProps> = ({ ticketId, tickets, onBack }) => {
+  // Find ticket from props
+  const ticket: Ticket | undefined = tickets.find(t => t.id === ticketId);
   const [activeTab, setActiveTab] = useState('activity');
   const [replyText, setReplyText] = useState('');
+
+  if (!ticket) {
+      return (
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+              <p className="text-gray-500">Ticket no encontrado</p>
+              <button onClick={onBack} className="text-primary hover:underline">Volver</button>
+          </div>
+      )
+  }
 
   return (
     <div className="flex flex-col h-full bg-background-light dark:bg-background-dark">
@@ -133,20 +142,6 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({ ticketId, onBack }) 
                                  <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0 border border-gray-200" style={{ backgroundImage: `url("${msg.avatar}")` }}></div>
                              )}
                         </div>
-                        {/* Status Change indicator example */}
-                        {idx === 1 && (
-                            <div className="text-center py-6 flex items-center gap-4">
-                                <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
-                                <span className="text-xs text-gray-500 uppercase tracking-widest font-semibold">Hoy</span>
-                                <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1"></div>
-                            </div>
-                        )}
-                         {idx === 2 && (
-                            <div className="text-center py-4 flex items-center gap-2 justify-center mt-4">
-                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                <p className="text-sm text-gray-600 dark:text-gray-300">Juan Pérez ha cambiado el estado a <span className="font-bold text-gray-900 dark:text-white">En Progreso</span></p>
-                            </div>
-                        )}
                      </div>
                  )) : (
                      <div className="text-center text-gray-500 py-10">No hay mensajes en este ticket.</div>
