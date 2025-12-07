@@ -2,28 +2,44 @@ import { Request, Response } from "express";
 import { prisma } from "../index";
 
 export const getArticles = async (req: Request, res: Response) => {
-  const { search } = req.query;
+  const { search, category } = req.query;
   try {
-    const where = search
-      ? {
-          OR: [
-            {
-              title: { contains: String(search), mode: "insensitive" as const },
-            },
-            {
-              content: {
-                contains: String(search),
-                mode: "insensitive" as const,
-              },
-            },
-            { tags: { has: String(search) } },
-          ],
-        }
-      : {};
+    const where: any = {};
+
+    // Category filter
+    if (category && String(category) !== "all") {
+      where.category = String(category);
+    }
+
+    // Search filter
+    if (search) {
+      where.OR = [
+        {
+          title: { contains: String(search), mode: "insensitive" as const },
+        },
+        {
+          content: {
+            contains: String(search),
+            mode: "insensitive" as const,
+          },
+        },
+        { tags: { has: String(search) } },
+      ];
+    }
 
     const articles = await prisma.knowledgeBase.findMany({
       where,
       orderBy: { createdAt: "desc" },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
     });
     res.json(articles);
   } catch (error) {
@@ -33,13 +49,26 @@ export const getArticles = async (req: Request, res: Response) => {
 };
 
 export const createArticle = async (req: Request, res: Response) => {
-  const { title, content, tags } = req.body;
+  const { title, content, category, tags, status, authorId } = req.body;
   try {
     const article = await prisma.knowledgeBase.create({
       data: {
         title,
         content,
+        category,
         tags: tags || [],
+        status: status || "PUBLISHED",
+        authorId,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
       },
     });
     res.json(article);
@@ -59,5 +88,83 @@ export const deleteArticle = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Error deleting article:", error);
     res.status(500).json({ error: "Failed to delete article" });
+  }
+};
+
+export const getArticleById = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const article = await prisma.knowledgeBase.findUnique({
+      where: { id },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    res.json(article);
+  } catch (error) {
+    console.error("Error fetching article:", error);
+    res.status(500).json({ error: "Failed to fetch article" });
+  }
+};
+
+export const updateArticle = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { title, content, category, tags, status } = req.body;
+
+  try {
+    const article = await prisma.knowledgeBase.update({
+      where: { id },
+      data: {
+        title,
+        content,
+        category,
+        tags,
+        status,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            avatar: true,
+          },
+        },
+      },
+    });
+    res.json(article);
+  } catch (error) {
+    console.error("Error updating article:", error);
+    res.status(500).json({ error: "Failed to update article" });
+  }
+};
+
+export const incrementViews = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    await prisma.knowledgeBase.update({
+      where: { id },
+      data: {
+        views: {
+          increment: 1,
+        },
+      },
+    });
+    res.json({ message: "View incremented" });
+  } catch (error) {
+    console.error("Error incrementing views:", error);
+    res.status(500).json({ error: "Failed to increment views" });
   }
 };

@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+import path from "path";
 
 dotenv.config();
 
@@ -13,14 +14,21 @@ import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
 import kbRoutes from "./routes/kb.routes";
 import userRoutes from "./routes/user.routes";
+import clientRoutes from "./routes/client.routes";
+import reportsRoutes from "./routes/reports.routes";
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/kb", kbRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/clients", clientRoutes);
+app.use("/api/reports", reportsRoutes);
 
 // Basic health check
 app.get("/api/health", (req, res) => {

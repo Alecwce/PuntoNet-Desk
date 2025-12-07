@@ -12,6 +12,8 @@ import api from "./lib/api";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { KnowledgeBase } from "./views/KnowledgeBase";
 import { Settings } from "./views/Settings";
+import { Clients } from "./views/Clients";
+import { Reports } from "./views/Reports";
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewState>("login");
@@ -28,8 +30,8 @@ function App() {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/tickets");
-      setTickets(response.data);
+      const response = await api.get("/tickets?limit=5"); // Fetch recent for dashboard
+      setTickets(response.data.data);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       // Use mock tickets if API fails
@@ -40,7 +42,7 @@ function App() {
   };
 
   // Authentication Flow Handlers
-  const handleLogin = () => setCurrentView("2fa");
+  const handleLogin = () => setCurrentView("dashboard");
   const handleVerify = () => setCurrentView("dashboard");
   const handleLogout = () => {
     setCurrentView("login");
@@ -58,57 +60,6 @@ function App() {
   const handleTicketSelect = (id: string) => {
     setSelectedTicketId(id);
     setCurrentView("ticket-detail");
-  };
-
-  // Logic to add a new ticket
-  const handleAddTicket = async (data: {
-    subject: string;
-    priority: string;
-    description: string;
-  }) => {
-    try {
-      const response = await api.post("/tickets", {
-        subject: data.subject,
-        description: data.description,
-        priority: data.priority,
-        creatorId: "user-id-placeholder", // Should come from auth context
-      });
-      setTickets([response.data, ...tickets]);
-      fetchTickets(); // Refresh list
-    } catch (error) {
-      console.error("Error creating ticket:", error);
-    }
-  };
-
-  // Logic to edit a ticket
-  const handleEditTicket = async (
-    id: string,
-    data: { subject: string; priority: string; description: string }
-  ) => {
-    try {
-      await api.put(`/tickets/${id}`, {
-        subject: data.subject,
-        priority: data.priority,
-        description: data.description,
-      });
-      fetchTickets(); // Refresh list from server
-    } catch (error) {
-      console.error("Error updating ticket:", error);
-    }
-  };
-
-  // Logic to delete a ticket
-  const handleDeleteTicket = async (id: string) => {
-    try {
-      await api.delete(`/tickets/${id}`);
-      // If the deleted ticket was open in detail view, go back
-      if (selectedTicketId === id) {
-        handleNavigate("tickets");
-      }
-      fetchTickets(); // Refresh list from server
-    } catch (error) {
-      console.error("Error deleting ticket:", error);
-    }
   };
 
   // Render logic based on state
@@ -149,13 +100,7 @@ function App() {
 
           {currentView === "tickets" && (
             <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-              <TicketList
-                tickets={tickets}
-                onTicketSelect={handleTicketSelect}
-                onCreateTicket={handleAddTicket}
-                onEditTicket={handleEditTicket}
-                onDeleteTicket={handleDeleteTicket}
-              />
+              <TicketList onTicketSelect={handleTicketSelect} />
             </ProtectedRoute>
           )}
 
@@ -163,7 +108,6 @@ function App() {
             <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
               <TicketDetail
                 ticketId={selectedTicketId}
-                tickets={tickets}
                 onBack={() => handleNavigate("tickets")}
               />
             </ProtectedRoute>
@@ -183,33 +127,13 @@ function App() {
 
           {currentView === "clients" && (
             <ProtectedRoute allowedRoles={["ADMIN", "AGENT"]}>
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <div className="text-center">
-                  <span className="material-symbols-outlined text-6xl mb-4">
-                    construction
-                  </span>
-                  <h2 className="text-2xl font-semibold">
-                    Página en construcción
-                  </h2>
-                  <p>La sección {currentView} estará disponible pronto.</p>
-                </div>
-              </div>
+              <Clients />
             </ProtectedRoute>
           )}
 
           {currentView === "reports" && (
             <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <div className="flex items-center justify-center h-full text-gray-400">
-                <div className="text-center">
-                  <span className="material-symbols-outlined text-6xl mb-4">
-                    construction
-                  </span>
-                  <h2 className="text-2xl font-semibold">
-                    Página en construcción
-                  </h2>
-                  <p>La sección {currentView} estará disponible pronto.</p>
-                </div>
-              </div>
+              <Reports />
             </ProtectedRoute>
           )}
         </main>

@@ -1,5 +1,4 @@
 import React from "react";
-import { CURRENT_USER } from "../constants";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +9,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
 }) => {
-  if (!allowedRoles.includes(CURRENT_USER.role)) {
+  // Get real user from localStorage
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+
+  if (!user || !allowedRoles.includes(user.role)) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         <div className="text-center">

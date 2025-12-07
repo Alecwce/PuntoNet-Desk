@@ -9,9 +9,10 @@ export interface User {
 export interface Ticket {
   id: string;
   subject: string;
+  description: string; // Shared with backend
   client: string;
-  priority: "Baja" | "Media" | "Alta" | "Crítica";
-  status: "Abierto" | "En Progreso" | "Resuelto" | "Cerrado";
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
   assignee: User;
   lastUpdate: string;
   messages: ChatMessage[];
@@ -19,11 +20,20 @@ export interface Ticket {
 
 export interface ChatMessage {
   id: string;
-  text: string;
-  sender: string; // 'Me' or Name
-  avatar: string;
+  content: string; // Renamed from text to match backend
+  sender: string;
+  avatar: string; // Optional, might need to map from sender relationship
   timestamp: string;
-  isMe: boolean;
+  isMe: boolean; // Calculated frontend side
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    totalPages: number;
+  };
 }
 
 export interface KPI {

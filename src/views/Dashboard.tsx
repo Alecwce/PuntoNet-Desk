@@ -1,7 +1,15 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { KPI_DATA } from "../constants";
 import { Icon } from "../components/Icon";
 import { Ticket } from "../types";
+import {
+  AreaChart,
+  Area,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 interface DashboardProps {
   tickets: Ticket[];
@@ -14,231 +22,303 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onTicketSelect,
   onViewAll,
 }) => {
-  const recentTickets = tickets.slice(0, 4);
-  // Find the specific preview ticket or default to the first one available
-  const previewTicketId = "TK-12345";
-  const previewTicket =
-    tickets.find((t) => t.id === previewTicketId) ||
-    (tickets.length > 0 ? tickets[0] : null);
+  const recentTickets = Array.isArray(tickets) ? tickets.slice(0, 5) : [];
+
+  // Get user info
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : { name: "Usuario" };
+
+  // Current Date
+  const today = new Date().toLocaleDateString("es-ES", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  // Simple mock data for chart if not enough real data
+  const chartData = [
+    { name: "Lun", tickets: 4 },
+    { name: "Mar", tickets: 3 },
+    { name: "Mie", tickets: 7 },
+    { name: "Jue", tickets: 5 },
+    { name: "Vie", tickets: 8 },
+    { name: "Sab", tickets: 2 },
+    { name: "Dom", tickets: 1 },
+  ];
 
   return (
-    <div className="p-8 space-y-8">
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+    <div className="p-8 space-y-8 animate-fade-in">
+      {/* Welcome Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Hola, {user.name.split(" ")[0]} 👋
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 capitalize">
+            {today}
+          </p>
+        </div>
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
+            <Icon name="add" className="text-xl" />
+            <span className="font-medium">Nuevo Ticket</span>
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {KPI_DATA.map((kpi, idx) => (
           <div
             key={idx}
-            className="flex flex-col gap-2 rounded-lg p-5 border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 shadow-sm transition-transform hover:-translate-y-1 duration-200"
+            className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
           >
-            <p className="text-gray-600 dark:text-gray-300 text-sm font-medium leading-normal">
+            <div
+              className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}
+            >
+              <Icon name="trending_up" className="text-6xl text-primary" />
+            </div>
+
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
               {kpi.label}
             </p>
-            <p className="text-gray-900 dark:text-white tracking-tight text-3xl font-bold leading-tight">
+            <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
               {kpi.value}
-            </p>
+            </h3>
+
             <div
-              className={`flex items-center text-sm font-medium leading-normal ${
-                kpi.trendColor === "green"
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
+              className={`flex items-center gap-1 text-sm font-medium ${
+                kpi.trendColor === "green" ? "text-green-500" : "text-red-500"
               }`}
             >
               <Icon
                 name={
                   kpi.trendDirection === "up" ? "trending_up" : "trending_down"
                 }
-                className="text-base"
               />
-              <p>{kpi.trend}</p>
+              <span>{kpi.trend}</span>
+              <span className="text-gray-400 dark:text-gray-500 ml-1 font-normal">
+                vs mes anterior
+              </span>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* Table Section */}
-        <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Gestión de Tickets Recientes
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Chart Area */}
+        <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              Actividad Semanal
             </h2>
-            <div className="flex gap-2">
-              <button
-                onClick={onViewAll}
-                className="text-primary text-sm font-medium hover:underline"
-              >
-                Ver todos
-              </button>
-            </div>
+            <select className="bg-gray-50 dark:bg-gray-700 border-none rounded-lg text-sm px-3 py-1 text-gray-600 dark:text-gray-300 focus:ring-2 focus:ring-primary/50">
+              <option>Esta Semana</option>
+              <option>Semana Pasada</option>
+            </select>
           </div>
-
-          <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800/50">
-                  <tr>
-                    <th className="px-4 py-3 text-left w-12">
-                      <input
-                        className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 bg-transparent text-primary focus:ring-primary/50"
-                        type="checkbox"
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                      Asunto
-                    </th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                      Prioridad
-                    </th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                      Asignado a
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {recentTickets.map((ticket) => (
-                    <tr
-                      key={ticket.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
-                      onClick={() => onTicketSelect(ticket.id)}
-                    >
-                      <td className="px-4 py-3 w-12">
-                        <input
-                          className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 bg-transparent text-primary focus:ring-primary/50"
-                          type="checkbox"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm font-normal">
-                        {ticket.id}
-                      </td>
-                      <td className="px-4 py-3 text-gray-800 dark:text-gray-100 text-sm font-semibold">
-                        {ticket.subject}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                                ${
-                                  ticket.priority === "Alta" ||
-                                  ticket.priority === "Crítica"
-                                    ? "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200"
-                                    : ticket.priority === "Media"
-                                    ? "bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200"
-                                    : "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200"
-                                }`}
-                        >
-                          {ticket.priority}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-sm">
-                        {ticket.status}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div
-                          className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 border border-gray-200"
-                          style={{
-                            backgroundImage: `url("${ticket.assignee.avatar}")`,
-                          }}
-                        ></div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9CA3AF" }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#9CA3AF" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "rgba(255, 255, 255, 0.9)",
+                    borderRadius: "8px",
+                    border: "none",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="tickets"
+                  stroke="#3B82F6"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorTickets)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Drawer Panel (Preview) */}
-        {previewTicket && (
-          <div className="col-span-12 lg:col-span-4 flex flex-col h-[600px] bg-white dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden sticky top-4">
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/30">
-              <div>
-                <p className="text-xs text-gray-500">{previewTicket.id}</p>
-                <h3 className="font-semibold text-gray-900 dark:text-white truncate max-w-[200px]">
-                  {previewTicket.subject}
-                </h3>
-              </div>
-              <button
-                onClick={() => onTicketSelect(previewTicket.id)}
-                className="flex items-center justify-center gap-2 h-8 px-3 bg-primary text-white text-xs font-medium rounded-DEFAULT hover:bg-primary/90"
-              >
-                <Icon name="open_in_new" className="text-sm" />
-                Abrir
-              </button>
-            </div>
+        {/* Quick Actions / Status */}
+        <div className="space-y-6">
+          {/* Quick Stats or Actions */}
+          <div className="bg-gradient-to-br from-primary to-blue-600 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+            <div className="absolute bottom-0 left-0 -mb-4 -ml-4 w-20 h-20 bg-black/10 rounded-full blur-xl"></div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-gray-900/20">
-              {previewTicket.messages && previewTicket.messages.length > 0 ? (
-                previewTicket.messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex items-start gap-3 ${
-                      msg.isMe ? "justify-end" : ""
-                    }`}
-                  >
-                    {!msg.isMe && (
-                      <div
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0"
-                        style={{ backgroundImage: `url("${msg.avatar}")` }}
-                      ></div>
-                    )}
-                    <div
-                      className={`flex flex-col gap-1 ${
-                        msg.isMe ? "items-end" : "items-start"
-                      }`}
-                    >
-                      <div
-                        className={`p-3 rounded-lg text-sm max-w-[240px] shadow-sm ${
-                          msg.isMe
-                            ? "rounded-tr-none bg-primary/10 dark:bg-primary/30 text-gray-800 dark:text-gray-200 border border-primary/20"
-                            : "rounded-tl-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700"
-                        }`}
-                      >
-                        {msg.text}
-                      </div>
-                      <span className="text-[10px] text-gray-400">
-                        {msg.sender.split(" ")[0]} · {msg.timestamp}
-                      </span>
-                    </div>
-                    {msg.isMe && (
-                      <div
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 shrink-0"
-                        style={{ backgroundImage: `url("${msg.avatar}")` }}
-                      ></div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="text-center text-gray-400 text-sm mt-10">
-                  No hay mensajes recientes
-                </div>
-              )}
-            </div>
-
-            <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800/50">
-              <h4 className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
-                Artículos relacionados
-              </h4>
-              <div className="flex flex-col gap-2">
-                <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm cursor-pointer transition-shadow">
-                  <p className="text-xs font-semibold text-primary truncate">
-                    Solución a problemas comunes de VPN
-                  </p>
-                </div>
-                <div className="p-2 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 hover:shadow-sm cursor-pointer transition-shadow">
-                  <p className="text-xs font-semibold text-primary truncate">
-                    Resetear token de seguridad
-                  </p>
-                </div>
+            <h3 className="text-lg font-bold mb-4 relative z-10">
+              Estado del Sistema
+            </h3>
+            <div className="space-y-4 relative z-10">
+              <div className="flex justify-between items-center">
+                <span className="text-blue-100">Servidores</span>
+                <span className="bg-green-400/20 text-green-100 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>{" "}
+                  Online
+                </span>
               </div>
+              <div className="flex justify-between items-center">
+                <span className="text-blue-100">Base de Datos</span>
+                <span className="bg-green-400/20 text-green-100 px-2 py-1 rounded text-xs font-semibold flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>{" "}
+                  Online
+                </span>
+              </div>
+              <div className="w-full bg-blue-900/30 rounded-full h-1.5 mt-2">
+                <div className="bg-white/80 h-1.5 rounded-full w-[98%]"></div>
+              </div>
+              <p className="text-xs text-blue-200 mt-1">Uptime: 99.9%</p>
             </div>
           </div>
-        )}
+
+          {/* Quick Links */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+              Accesos Rápidos
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group">
+                <Icon
+                  name="add_circle"
+                  className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
+                />
+                <span className="text-xs font-medium">Crear Ticket</span>
+              </button>
+              <button
+                onClick={onViewAll}
+                className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group"
+              >
+                <Icon
+                  name="list_alt"
+                  className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
+                />
+                <span className="text-xs font-medium">Ver Todos</span>
+              </button>
+              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group">
+                <Icon
+                  name="person_add"
+                  className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
+                />
+                <span className="text-xs font-medium">Nuevo Cliente</span>
+              </button>
+              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group">
+                <Icon
+                  name="settings"
+                  className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
+                />
+                <span className="text-xs font-medium">Ajustes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Tickets Table */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Tickets Recientes
+          </h2>
+          <button
+            onClick={onViewAll}
+            className="text-primary text-sm font-semibold hover:underline"
+          >
+            Ver todos los tickets
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50/50 dark:bg-gray-700/30">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Asunto
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Prioridad
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Estado
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  Asignado
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+              {recentTickets.map((ticket) => (
+                <tr
+                  key={ticket.id}
+                  onClick={() => onTicketSelect(ticket.id)}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                >
+                  <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-gray-400">
+                    TK-{ticket.id.substring(0, 4)}
+                  </td>
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                    {ticket.subject}
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        ticket.priority === "HIGH" ||
+                        ticket.priority === "CRITICAL"
+                          ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                          : ticket.priority === "MEDIUM"
+                          ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                          : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                      }`}
+                    >
+                      {ticket.priority}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                    {ticket.status}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-600 bg-cover"
+                        style={{
+                          backgroundImage: `url("${
+                            ticket.assignee?.avatar ||
+                            "https://ui-avatars.com/api/?name=U"
+                          }")`,
+                        }}
+                      ></div>
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {ticket.assignee?.name || "Unassigned"}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

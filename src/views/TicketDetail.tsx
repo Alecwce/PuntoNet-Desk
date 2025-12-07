@@ -1,176 +1,434 @@
-import React, { useState } from 'react';
-import { Icon } from '../components/Icon';
-import { Ticket } from '../types';
+import React, { useState, useEffect, useRef } from "react";
+import { Icon } from "../components/Icon";
+import { Ticket, ChatMessage } from "../types";
+import api from "../lib/api";
 
 interface TicketDetailProps {
   ticketId: string;
-  tickets: Ticket[]; // Receive tickets from parent
   onBack: () => void;
 }
 
-export const TicketDetail: React.FC<TicketDetailProps> = ({ ticketId, tickets, onBack }) => {
-  // Find ticket from props
-  const ticket: Ticket | undefined = tickets.find(t => t.id === ticketId);
-  const [activeTab, setActiveTab] = useState('activity');
-  const [replyText, setReplyText] = useState('');
+export const TicketDetail: React.FC<TicketDetailProps> = ({
+  ticketId,
+  onBack,
+}) => {
+  const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("activity");
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  if (!ticket) {
-      return (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-              <p className="text-gray-500">Ticket no encontrado</p>
-              <button onClick={onBack} className="text-primary hover:underline">Volver</button>
-          </div>
-      )
-  }
+  // Fetch ticket data
+  const fetchTicket = async () => {
+    try {
+      const response = await api.get(`/tickets/${ticketId}`);
+      setTicket(response.data);
+    } catch (error) {
+      console.error("Error fetching ticket:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTicket();
+  }, [ticketId]);
+
+  // Scroll to bottom of chat
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [ticket?.messages]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !ticket) return;
+
+    try {
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+      const senderId = user?.id;
+
+      if (!senderId) {
+        console.error("User not logged in");
+        return;
+      }
+
+      await api.post(`/tickets/${ticket.id}/messages`, {
+        content: newMessage,
+        senderId,
+      });
+      setNewMessage("");
+      fetchTicket(); // Refresh to show new message
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!ticket) return;
+    try {
+      await api.put(`/tickets/${ticket.id}`, { status: newStatus });
+      setTicket({ ...ticket, status: newStatus as any });
+    } catch (error) {
+      console.error("Error updating status:", error);
+    }
+  };
+
+  const handlePriorityChange = async (newPriority: string) => {
+    if (!ticket) return;
+    try {
+      await api.put(`/tickets/${ticket.id}`, { priority: newPriority });
+      setTicket({ ...ticket, priority: newPriority as any });
+    } catch (error) {
+      console.error("Error updating priority:", error);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="p-8 flex justify-center text-gray-500">
+        Cargando detalles...
+      </div>
+    );
+  if (!ticket)
+    return (
+      <div className="p-8 flex justify-center text-red-500">
+        Ticket no encontrado
+      </div>
+    );
 
   return (
-    <div className="flex flex-col h-full bg-background-light dark:bg-background-dark">
-      {/* Detail Header */}
-      <div className="p-8 pb-4 flex flex-col gap-6">
-         <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 cursor-pointer hover:text-primary" onClick={onBack}>
-             <Icon name="arrow_back" className="text-sm" /> Volver a la lista
-         </div>
-         
-         <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
-             <div className="flex items-center gap-4">
-                 <span className="text-gray-500 dark:text-gray-400 font-medium text-lg">{ticket.id}</span>
-                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{ticket.subject}</h1>
-             </div>
-             <div className="flex items-center gap-3">
-                 <button className="flex h-9 items-center justify-center gap-2 rounded-DEFAULT bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium shadow-sm transition-colors">
-                     Asignar
-                 </button>
-                  <button className="flex h-9 items-center justify-center gap-2 rounded-DEFAULT bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm font-medium shadow-sm transition-colors">
-                     Cerrar
-                 </button>
-                 <button className="flex items-center justify-center gap-2 h-9 px-4 bg-primary text-white text-sm font-medium rounded-DEFAULT hover:bg-primary/90 shadow-sm transition-colors">
-                    Resolver
-                 </button>
-             </div>
-         </div>
-
-         <div className="flex flex-wrap items-center gap-6 p-4 bg-white dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm">
-             <div className="flex items-center gap-2">
-                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Estado:</label>
-                 <div className="relative">
-                     <select 
-                        defaultValue={ticket.status}
-                        className="form-select appearance-none pl-3 pr-8 py-1 rounded-DEFAULT border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium focus:border-primary focus:ring-primary/50 text-gray-800 dark:text-gray-100"
-                     >
-                         <option>Abierto</option>
-                         <option>En Progreso</option>
-                         <option>Resuelto</option>
-                         <option>Cerrado</option>
-                     </select>
-                 </div>
-             </div>
-              <div className="flex items-center gap-2">
-                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Prioridad:</label>
-                 <div className="relative flex items-center">
-                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium z-10 ml-1
-                         ${ticket.priority === 'Alta' || ticket.priority === 'Crítica' ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200' : 
-                         ticket.priority === 'Media' ? 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-200' :
-                         'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'}`}>
-                         {ticket.priority}
-                     </span>
-                     <select className="form-select appearance-none pl-16 pr-8 py-1 rounded-DEFAULT border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium focus:border-primary focus:ring-primary/50 opacity-0 absolute inset-0 w-full h-full cursor-pointer">
-                         <option>Baja</option>
-                         <option>Media</option>
-                         <option>Alta</option>
-                         <option>Crítica</option>
-                     </select>
-                     <Icon name="expand_more" className="text-gray-500 ml-2" />
-                 </div>
-             </div>
-             <div className="flex items-center gap-2 ml-auto">
-                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Asignado a:</label>
-                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded border border-gray-200 dark:border-gray-700">
-                     <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-6" style={{ backgroundImage: `url("${ticket.assignee.avatar}")` }}></div>
-                     <span className="text-sm text-gray-700 dark:text-gray-200">{ticket.assignee.name}</span>
-                  </div>
-             </div>
-         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="px-8 border-b border-gray-200 dark:border-gray-700">
-          <nav className="-mb-px flex space-x-8 overflow-x-auto">
-             {['Detalles', 'Actividad/Chat', 'Adjuntos', 'Base de Conocimiento', 'Historial'].map((tab) => {
-                 const id = tab.toLowerCase().includes('chat') ? 'activity' : tab.toLowerCase();
-                 return (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(id)}
-                        className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                            activeTab === id
-                            ? 'border-primary text-primary'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                        }`}
-                    >
-                        {tab}
-                    </button>
-                 )
-             })}
-          </nav>
-      </div>
-
-      {/* Tab Content (Activity focused) */}
-      <div className="flex-1 overflow-y-auto p-8 bg-background-light dark:bg-background-dark scrollbar-hide">
-         {activeTab === 'activity' ? (
-             <div className="max-w-4xl mx-auto space-y-8 pb-24">
-                 {/* Chat Messages */}
-                 {ticket.messages.length > 0 ? ticket.messages.map((msg, idx) => (
-                     <div key={msg.id} className="animate-fade-in-up">
-                        <div className={`flex items-start gap-4 ${msg.isMe ? 'justify-end' : ''}`}>
-                             {!msg.isMe && (
-                                 <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0 border border-gray-200" style={{ backgroundImage: `url("${msg.avatar}")` }}></div>
-                             )}
-                             <div className={`flex flex-col gap-1 ${msg.isMe ? 'items-end' : 'items-start'} max-w-[80%]`}>
-                                <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{msg.sender}</span>
-                                    <span className="text-xs text-gray-500">{msg.timestamp}</span>
-                                </div>
-                                <div className={`p-4 rounded-xl text-sm leading-relaxed shadow-sm ${
-                                    msg.isMe 
-                                    ? 'rounded-tr-none bg-primary/10 dark:bg-primary/20 text-gray-800 dark:text-gray-100 border border-primary/20' 
-                                    : 'rounded-tl-none bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700'
-                                }`}>
-                                    {msg.text}
-                                </div>
-                             </div>
-                              {msg.isMe && (
-                                 <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0 border border-gray-200" style={{ backgroundImage: `url("${msg.avatar}")` }}></div>
-                             )}
-                        </div>
-                     </div>
-                 )) : (
-                     <div className="text-center text-gray-500 py-10">No hay mensajes en este ticket.</div>
-                 )}
-             </div>
-         ) : (
-             <div className="text-center text-gray-500 mt-10">Contenido de la pestaña {activeTab} no implementado en esta demo.</div>
-         )}
-      </div>
-
-      {/* Input Area (Sticky Bottom) */}
-      <div className="p-6 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 z-10 shadow-lg">
-          <div className="max-w-4xl mx-auto relative">
-              <textarea 
-                className="form-textarea w-full rounded-xl border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 focus:border-primary focus:ring-primary/30 text-sm p-4 pr-32 shadow-inner resize-none" 
-                placeholder="Escribe un comentario o respuesta..." 
-                rows={3}
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-              ></textarea>
-              <div className="absolute bottom-4 right-4 flex items-center gap-3">
-                  <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 transition-colors">
-                      <Icon name="attach_file" className="text-xl" />
-                  </button>
-                  <button className="flex items-center justify-center gap-2 h-9 px-6 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary/90 shadow-md transition-all hover:shadow-lg">
-                      Enviar
-                  </button>
-              </div>
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-background-dark">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"
+          >
+            <Icon name="arrow_back" />
+          </button>
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                #{ticket.id.substring(0, 8)}
+              </h1>
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-xs font-medium 
+                ${
+                  ticket.status === "OPEN"
+                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
+                    : ticket.status === "IN_PROGRESS"
+                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200"
+                    : "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
+                }`}
+              >
+                {ticket.status}
+              </span>
+            </div>
+            <h2 className="text-sm text-gray-600 dark:text-gray-300">
+              {ticket.subject}
+            </h2>
           </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Status Selector */}
+          <select
+            className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+            value={ticket.status}
+            onChange={(e) => handleStatusChange(e.target.value)}
+          >
+            <option value="OPEN">Abierto</option>
+            <option value="IN_PROGRESS">En Progreso</option>
+            <option value="RESOLVED">Resuelto</option>
+            <option value="CLOSED">Cerrado</option>
+          </select>
+
+          {/* Priority Selector */}
+          <select
+            className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+            value={ticket.priority}
+            onChange={(e) => handlePriorityChange(e.target.value)}
+          >
+            <option value="LOW">Baja</option>
+            <option value="MEDIUM">Media</option>
+            <option value="HIGH">Alta</option>
+            <option value="CRITICAL">Crítica</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900/50 mx-4 my-4 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm">
+          {/* Tabs */}
+          <div className="border-b border-gray-200 dark:border-gray-800">
+            <nav className="-mb-px flex px-4 gap-4" aria-label="Tabs">
+              {["details", "activity", "attachments", "kb", "history"].map(
+                (tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`
+                      whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                      ${
+                        activeTab === tab
+                          ? "border-primary text-primary"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                      }
+                    `}
+                  >
+                    {tab === "details"
+                      ? "Detalles"
+                      : tab === "activity"
+                      ? "Actividad/Chat"
+                      : tab === "attachments"
+                      ? "Adjuntos"
+                      : tab === "kb"
+                      ? "Base de Conocimiento"
+                      : "Historial"}
+                  </button>
+                )
+              )}
+            </nav>
+          </div>
+
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {activeTab === "details" && (
+              <div className="prose dark:prose-invert max-w-none">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                  Descripción
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                  {(ticket as any).description || "Sin descripción"}
+                </p>
+
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Cliente
+                    </span>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {(ticket as any).creator?.name || "Desconocido"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      Email
+                    </span>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {(ticket as any).creator?.email || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "activity" && (
+              <div className="flex flex-col h-full">
+                <div className="flex-1 space-y-4 mb-4">
+                  {ticket.messages && ticket.messages.length > 0 ? (
+                    ticket.messages.map((msg: any) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${
+                          msg.senderId === "current-user-id"
+                            ? "justify-end"
+                            : "justify-start"
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                            msg.senderId === "current-user-id"
+                              ? "bg-primary text-white"
+                              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          }`}
+                        >
+                          <p className="text-sm">{msg.content}</p>
+                          <span className="text-xs opacity-70 mt-1 block">
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-400 text-sm py-10">
+                      No hay mensajes aún.
+                    </p>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form
+                  onSubmit={handleSendMessage}
+                  className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800"
+                >
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Escribe un mensaje..."
+                      className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim()}
+                      className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Icon name="send" className="text-xl" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Placeholders for other tabs */}
+            {activeTab === "attachments" && (
+              <div className="p-4">
+                <div className="mb-6">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                    Subir archivo
+                  </h4>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      className="block w-full text-sm text-gray-500
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-full file:border-0
+                                  file:text-sm file:font-semibold
+                                  file:bg-primary file:text-white
+                                  hover:file:bg-primary/90"
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          const userStr = localStorage.getItem("user");
+                          const user = userStr ? JSON.parse(userStr) : null;
+                          const uploaderId = user?.id;
+
+                          if (!uploaderId) {
+                            console.error("User not found");
+                            return;
+                          }
+
+                          const formData = new FormData();
+                          formData.append("file", e.target.files[0]);
+                          formData.append("uploaderId", uploaderId);
+                          try {
+                            await api.post(
+                              `/tickets/${ticketId}/attachments`,
+                              formData,
+                              {
+                                headers: {
+                                  "Content-Type": "multipart/form-data",
+                                },
+                              }
+                            );
+                            fetchTicket(); // Refresh list
+                          } catch (error) {
+                            console.error("Error uploading:", error);
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+                  Archivos Adjuntos
+                </h4>
+                {(ticket as any).attachments &&
+                (ticket as any).attachments.length > 0 ? (
+                  <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {(ticket as any).attachments.map((att: any) => (
+                      <li
+                        key={att.id}
+                        className="py-3 flex justify-between items-center"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon name="description" className="text-gray-400" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {att.filename}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(att.size / 1024).toFixed(1)} KB •{" "}
+                              {new Date(att.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={
+                            `${
+                              import.meta.env.VITE_API_URL ||
+                              "http://localhost:3001/api"
+                            }`.replace("/api", "") + att.path
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:text-primary/80 text-sm font-medium"
+                        >
+                          Descargar
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-sm">
+                    No hay archivos adjuntos.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar Info */}
+        <div className="w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 p-6 overflow-y-auto hidden xl:block">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">
+            Información del Ticket
+          </h3>
+          <div className="space-y-6">
+            <div>
+              <span className="text-xs font-medium text-gray-500 uppercase">
+                Asignado a
+              </span>
+              <div className="mt-2 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs">
+                  {(ticket.assignee as any)?.name?.charAt(0) || "?"}
+                </div>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {(ticket.assignee as any)?.name || "Sin asignar"}
+                </span>
+              </div>
+            </div>
+            <div>
+              <span className="text-xs font-medium text-gray-500 uppercase">
+                Creado
+              </span>
+              <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                {new Date((ticket as any).createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div>
+              <span className="text-xs font-medium text-gray-500 uppercase">
+                Última actualización
+              </span>
+              <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                {new Date((ticket as any).updatedAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -27,6 +27,12 @@ enum Status {
   CLOSED
 }
 
+enum KBStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -37,9 +43,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ticketsAssigned Ticket[]  @relation("AssignedTo")
-  ticketsCreated  Ticket[]  @relation("CreatedBy")
-  messages        Message[]
+  ticketsAssigned     Ticket[]         @relation("AssignedTo")
+  ticketsCreated      Ticket[]         @relation("CreatedBy")
+  messages            Message[]
+  uploadedAttachments Attachment[]
+  knowledgeBaseArticles KnowledgeBase[]
 }
 
 model Ticket {
@@ -51,32 +59,54 @@ model Ticket {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  assigneeId  String?
-  assignee    User?    @relation("AssignedTo", fields: [assigneeId], references: [id])
+  assigneeId String?
+  assignee   User?   @relation("AssignedTo", fields: [assigneeId], references: [id])
 
-  creatorId   String
-  creator     User     @relation("CreatedBy", fields: [creatorId], references: [id])
+  creatorId String
+  creator   User   @relation("CreatedBy", fields: [creatorId], references: [id])
 
   messages    Message[]
+  attachments Attachment[]
 }
 
 model Message {
   id        String   @id @default(uuid())
   content   String
   createdAt DateTime @default(now())
-  
-  ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id])
 
-  senderId  String
-  sender    User     @relation(fields: [senderId], references: [id])
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id])
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  filename  String
+  path      String
+  mimetype  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id])
+
+  uploaderId String
+  uploader   User   @relation(fields: [uploaderId], references: [id])
 }
 
 model KnowledgeBase {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   title     String
   content   String
+  category  String?
   tags      String[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    KBStatus         @default(PUBLISHED)
+  views     Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  authorId  String
+  author    User             @relation(fields: [authorId], references: [id])
 }

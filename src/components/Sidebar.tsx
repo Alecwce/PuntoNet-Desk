@@ -1,5 +1,4 @@
 import React from "react";
-import { CURRENT_USER } from "../constants";
 import { ViewState } from "../types";
 import { Icon } from "./Icon";
 
@@ -14,6 +13,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   onLogout,
 }) => {
+  // Get real user from localStorage
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+
   const menuItems = [
     {
       id: "dashboard",
@@ -66,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <nav className="flex flex-col gap-2 mt-4">
             {menuItems
-              .filter((item) => item.roles.includes(CURRENT_USER.role))
+              .filter((item) => user && item.roles.includes(user.role))
               .map((item) => {
                 // Simple logic to highlight parent views
                 const isActive =
@@ -96,14 +99,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="flex items-center gap-3 px-3 py-2 rounded-DEFAULT hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">
             <div
               className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 border border-gray-200 dark:border-gray-700"
-              style={{ backgroundImage: `url("${CURRENT_USER.avatar}")` }}
+              style={{
+                backgroundImage: `url("${
+                  user?.avatar || "https://ui-avatars.com/api/?name=User"
+                }")`,
+              }}
             ></div>
             <div className="flex flex-col text-left">
               <p className="text-gray-900 dark:text-white text-sm font-semibold leading-normal">
-                {CURRENT_USER.name}
+                {user?.name || "Usuario"}
               </p>
               <p className="text-gray-500 dark:text-gray-400 text-xs">
-                {CURRENT_USER.role}
+                {user?.role || "N/A"}
               </p>
             </div>
           </div>
