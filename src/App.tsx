@@ -95,6 +95,8 @@ function App() {
               tickets={tickets}
               onTicketSelect={handleTicketSelect}
               onViewAll={() => setCurrentView("tickets")}
+              onNavigate={handleNavigate}
+              onRefresh={fetchTickets}
             />
           )}
 

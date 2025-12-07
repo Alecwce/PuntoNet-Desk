@@ -1,7 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useState } from "react";
 import { KPI_DATA } from "../constants";
 import { Icon } from "../components/Icon";
-import { Ticket } from "../types";
+import { Ticket, ViewState } from "../types";
+import api from "../lib/api";
+import { CreateTicketModal } from "../components/CreateTicketModal";
+import { CreateClientModal } from "../components/CreateClientModal";
+
 import {
   AreaChart,
   Area,
@@ -15,13 +19,20 @@ interface DashboardProps {
   tickets: Ticket[];
   onTicketSelect: (ticketId: string) => void;
   onViewAll: () => void;
+  onNavigate: (view: ViewState) => void;
+  onRefresh: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   tickets,
   onTicketSelect,
   onViewAll,
+  onNavigate,
+  onRefresh,
 }) => {
+  const [showCreateTicket, setShowCreateTicket] = useState(false);
+  const [showCreateClient, setShowCreateClient] = useState(false);
+
   const recentTickets = Array.isArray(tickets) ? tickets.slice(0, 5) : [];
 
   // Get user info
@@ -48,7 +59,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   return (
-    <div className="p-8 space-y-8 animate-fade-in">
+    <div className="p-8 space-y-8 animate-fade-in relative z-0">
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -60,7 +71,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30">
+          <button
+            onClick={() => setShowCreateTicket(true)}
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
+          >
             <Icon name="add" className="text-xl" />
             <span className="font-medium">Nuevo Ticket</span>
           </button>
@@ -118,7 +132,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <option>Semana Pasada</option>
             </select>
           </div>
-          <div className="h-[300px] w-full">
+          <div className="h-[300px] w-full" style={{ minHeight: "300px" }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -198,7 +212,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Accesos Rápidos
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group">
+              <button
+                onClick={() => setShowCreateTicket(true)}
+                className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group"
+              >
                 <Icon
                   name="add_circle"
                   className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
@@ -215,14 +232,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 />
                 <span className="text-xs font-medium">Ver Todos</span>
               </button>
-              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group">
+              <button
+                onClick={() => setShowCreateClient(true)}
+                className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group"
+              >
                 <Icon
                   name="person_add"
                   className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
                 />
                 <span className="text-xs font-medium">Nuevo Cliente</span>
               </button>
-              <button className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group">
+              <button
+                onClick={() => onNavigate("settings")}
+                className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group"
+              >
                 <Icon
                   name="settings"
                   className="text-2xl text-gray-400 group-hover:text-primary transition-colors"
@@ -292,11 +315,27 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
                       }`}
                     >
-                      {ticket.priority}
+                      {ticket.priority === "LOW"
+                        ? "Baja"
+                        : ticket.priority === "MEDIUM"
+                        ? "Media"
+                        : ticket.priority === "HIGH"
+                        ? "Alta"
+                        : ticket.priority === "CRITICAL"
+                        ? "Crítica"
+                        : ticket.priority}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
-                    {ticket.status}
+                    {ticket.status === "OPEN"
+                      ? "Abierto"
+                      : ticket.status === "IN_PROGRESS"
+                      ? "En Progreso"
+                      : ticket.status === "RESOLVED"
+                      ? "Resuelto"
+                      : ticket.status === "CLOSED"
+                      ? "Cerrado"
+                      : ticket.status}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -320,6 +359,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Modals */}
+      <CreateTicketModal
+        isOpen={showCreateTicket}
+        onClose={() => setShowCreateTicket(false)}
+        onCreate={async (data) => {
+          try {
+            const userStr = localStorage.getItem("user");
+            const user = userStr ? JSON.parse(userStr) : null;
+            if (user) {
+              await api.post("/tickets", {
+                ...data,
+                creatorId: user.id,
+                status: "OPEN",
+              });
+              onRefresh();
+              setShowCreateTicket(false);
+            }
+          } catch (error) {
+            console.error("Error creating ticket:", error);
+          }
+        }}
+      />
+
+      <CreateClientModal
+        isOpen={showCreateClient}
+        onClose={() => setShowCreateClient(false)}
+        onCreate={async (data) => {
+          setShowCreateClient(false);
+        }}
+        onEdit={async () => {}}
+        clientToEdit={null}
+      />
     </div>
   );
 };
