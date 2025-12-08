@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { Icon } from "../components/Icon";
-import api from "../lib/api";
+import { Icon } from "@/components/Icon";
+import api from "@/lib/api";
 import { AxiosError } from "axios";
 
 interface LoginProps {
@@ -22,8 +22,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     try {
       const response = await api.post("/auth/login", { email, password });
 
-      // Store token and user info
-      localStorage.setItem("token", response.data.token);
+      // Store user info (but NOT the token, as it's in a HttpOnly cookie now)
       localStorage.setItem("user", JSON.stringify(response.data.user));
 
       // Proceed to next view
@@ -58,23 +57,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             />
           </div>
 
-          {/* Logo y Branding - Centrado y más prominente */}
+          {/* Logo Principal con Texto integrado */}
           <div className="flex flex-col items-center gap-4">
-            {/* Icono circular */}
-            <div className="bg-blue-500 p-4 rounded-full shadow-lg">
-              <Icon
-                name="support_agent"
-                className="text-brand-panel-light text-4xl"
-              />
-            </div>
-
-            {/* Texto del branding - Centrado */}
-            <div className="text-center">
-              <h2 className="text-4xl font-bold leading-tight mb-2 text-black">
-                PuntoNet
-              </h2>
-              <p className="text-xl text-black font-semibold">Service Desk</p>
-            </div>
+            <img
+              src="/logo1.png"
+              alt="PuntoNet Service Desk"
+              className="w-64 h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+            />
           </div>
 
           {/* Descripción - Centrada y más legible */}
@@ -90,12 +79,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="max-w-md w-full space-y-8">
           <div className="text-center space-y-2">
             <div className="flex justify-center mb-6">
-              <div className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-white">
-                <div className="bg-primary p-1.5 rounded-full flex items-center justify-center">
-                  <Icon name="support_agent" className="text-white text-lg" />
-                </div>
-                <span className="text-2xl">PuntoNet</span>
-              </div>
+              <img
+                src="/logo1.png"
+                alt="PuntoNet Desk"
+                className="h-24 w-auto"
+              />
             </div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
               Iniciar Sesión

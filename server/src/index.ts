@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
@@ -17,7 +19,14 @@ import userRoutes from "./routes/user.routes";
 import clientRoutes from "./routes/client.routes";
 import reportsRoutes from "./routes/reports.routes";
 
-app.use(cors());
+app.use(helmet());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"], // Explicit origin for credentials
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Serve static files from uploads directory

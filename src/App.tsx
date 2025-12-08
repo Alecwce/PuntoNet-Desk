@@ -44,7 +44,13 @@ function App() {
   // Authentication Flow Handlers
   const handleLogin = () => setCurrentView("dashboard");
   const handleVerify = () => setCurrentView("dashboard");
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+    localStorage.removeItem("user");
     setCurrentView("login");
     setSelectedTicketId(null);
   };

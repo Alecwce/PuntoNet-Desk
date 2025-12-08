@@ -10,27 +10,45 @@ declare global {
   }
 }
 
+import jwt from "jsonwebtoken";
+
 export const authenticate = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  // For this MVP/Demo, we are skipping real JWT verification
-  // In a real app, we would verify the token from req.headers.authorization
-
-  // Simulating a logged-in user (e.g., Admin) for testing purposes
-  // You can change this email to test different roles
-  const demoEmail = "admin@puntonet.com";
-
   try {
-    const user = await prisma.user.findUnique({ where: { email: demoEmail } });
-    if (!user) {
-      return res.status(401).json({ message: "Unauthorized" });
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "No autorizado - Token no encontrado" });
     }
+
+    // Verify token
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "default-secret-key"
+    ) as any;
+
+    if (!decoded || !decoded.userId) {
+      return res.status(401).json({ message: "Token inválido" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Usuario no encontrado" });
+    }
+
     req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
+    console.error("Auth error:", error);
+    res.status(401).json({ message: "Sesión inválida o expirada" });
   }
 };
 
