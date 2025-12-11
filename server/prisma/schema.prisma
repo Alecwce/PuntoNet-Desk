@@ -43,6 +43,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Two-Factor Authentication
+  twoFactorSecret     String?
+  isTwoFactorEnabled  Boolean  @default(false)
+
   ticketsAssigned     Ticket[]         @relation("AssignedTo")
   ticketsCreated      Ticket[]         @relation("CreatedBy")
   messages            Message[]

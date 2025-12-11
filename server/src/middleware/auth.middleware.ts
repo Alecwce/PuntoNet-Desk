@@ -1,16 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../index";
+import { User, Role } from "@prisma/client";
+import jwt from "jsonwebtoken";
 
 // Extend Request type to include user
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: User;
     }
   }
 }
 
-import jwt from "jsonwebtoken";
+interface TokenPayload {
+  userId: string;
+  role: Role;
+  email: string;
+}
 
 export const authenticate = async (
   req: Request,
@@ -30,7 +36,7 @@ export const authenticate = async (
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || "default-secret-key"
-    ) as any;
+    ) as TokenPayload;
 
     if (!decoded || !decoded.userId) {
       return res.status(401).json({ message: "Token inválido" });

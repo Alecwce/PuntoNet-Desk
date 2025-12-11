@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "../lib/api";
 import { CURRENT_USER } from "../constants";
+import { TwoFactorSetup } from "../components/TwoFactorSetup";
 
 interface User {
   id: string;
@@ -38,6 +39,9 @@ export const Settings: React.FC = () => {
     confirmPassword: "",
   });
 
+  // 2FA State
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+
   // User Form State
   const [userFormData, setUserFormData] = useState<UserFormData>({
     name: "",
@@ -52,6 +56,19 @@ export const Settings: React.FC = () => {
       fetchUsers();
     }
   }, [activeTab]);
+
+  // Fetch 2FA status on mount
+  useEffect(() => {
+    const fetch2FAStatus = async () => {
+      try {
+        const response = await api.get("/auth/2fa/status");
+        setIs2FAEnabled(response.data.isTwoFactorEnabled);
+      } catch (error) {
+        console.error("Error fetching 2FA status:", error);
+      }
+    };
+    fetch2FAStatus();
+  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -210,101 +227,117 @@ export const Settings: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto">
         {activeTab === "profile" && (
-          <div className="max-w-2xl bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
-              Editar Perfil
-            </h2>
-            <form onSubmit={handleProfileUpdate} className="space-y-6">
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  <div
-                    className="w-24 h-24 rounded-full bg-gray-200 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-md"
-                    style={{
-                      backgroundImage: `url("${
-                        profileData.avatar ||
-                        "https://ui-avatars.com/api/?name=" + profileData.name
-                      }")`,
-                    }}
-                  ></div>
+          <>
+            <div className="max-w-2xl bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
+                Editar Perfil
+              </h2>
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                <div className="flex items-center gap-6">
+                  <div className="relative">
+                    <div
+                      className="w-24 h-24 rounded-full bg-gray-200 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-md"
+                      style={{
+                        backgroundImage: `url("${
+                          profileData.avatar ||
+                          "https://ui-avatars.com/api/?name=" + profileData.name
+                        }")`,
+                      }}
+                    ></div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      URL del Avatar
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={profileData.avatar}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          avatar: e.target.value,
+                        })
+                      }
+                      placeholder="https://..."
+                    />
+                  </div>
                 </div>
-                <div className="flex-1">
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    URL del Avatar
+                    Nombre Completo
                   </label>
                   <input
                     type="text"
+                    required
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    value={profileData.avatar}
+                    value={profileData.name}
                     onChange={(e) =>
-                      setProfileData({ ...profileData, avatar: e.target.value })
+                      setProfileData({ ...profileData, name: e.target.value })
                     }
-                    placeholder="https://..."
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  value={profileData.name}
-                  onChange={(e) =>
-                    setProfileData({ ...profileData, name: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Nueva Contraseña
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    value={profileData.password}
-                    onChange={(e) =>
-                      setProfileData({
-                        ...profileData,
-                        password: e.target.value,
-                      })
-                    }
-                    placeholder="Dejar en blanco para mantener"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Nueva Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={profileData.password}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          password: e.target.value,
+                        })
+                      }
+                      placeholder="Dejar en blanco para mantener"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Confirmar Contraseña
+                    </label>
+                    <input
+                      type="password"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      value={profileData.confirmPassword}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      placeholder="Confirmar nueva contraseña"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Confirmar Contraseña
-                  </label>
-                  <input
-                    type="password"
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    value={profileData.confirmPassword}
-                    onChange={(e) =>
-                      setProfileData({
-                        ...profileData,
-                        confirmPassword: e.target.value,
-                      })
-                    }
-                    placeholder="Confirmar nueva contraseña"
-                  />
-                </div>
-              </div>
 
-              <div className="pt-4 flex justify-end">
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 shadow-sm font-medium"
-                >
-                  Guardar Cambios
-                </button>
-              </div>
-            </form>
-          </div>
+                <div className="pt-4 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 shadow-sm font-medium"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* 2FA Security Section */}
+            <div className="max-w-2xl mt-6">
+              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+                Seguridad Extra
+              </h2>
+              <TwoFactorSetup
+                isEnabled={is2FAEnabled}
+                onStatusChange={setIs2FAEnabled}
+              />
+            </div>
+          </>
         )}
 
         {activeTab === "users" && CURRENT_USER.role === "ADMIN" && (
