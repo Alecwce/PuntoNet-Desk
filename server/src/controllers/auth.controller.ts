@@ -368,7 +368,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Don't reveal user existence
-      return res.json({ message: "Si el correo existe, recibirás instrucciones." });
+      return res.json({
+        message: "Si el correo existe, recibirás instrucciones.",
+      });
     }
 
     // Generate token
@@ -390,7 +392,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     });
 
     // Simulate email sending
-    const resetLink = \`http://localhost:5173/reset-password?token=\${token}\`;
+    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
     console.log("==========================================");
     console.log("PASSWORD RESET LINK (SIMULATION):");
     console.log(resetLink);
@@ -407,7 +409,9 @@ export const resetPassword = async (req: Request, res: Response) => {
   const { token, newPassword } = req.body;
 
   if (newPassword.length < 8) {
-    return res.status(400).json({ error: "Password must be at least 8 characters" });
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 8 characters" });
   }
 
   try {

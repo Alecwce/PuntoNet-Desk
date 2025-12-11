@@ -23,13 +23,13 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173"], // Explicit origin for credentials
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
     credentials: true,
   })
 );
 app.use(express.json());
 
-// Serve static files from uploads directory
+// Serve static files from uploads directory (Legacy support, everything now in Cloudinary)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoutes);
@@ -39,9 +39,24 @@ app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/reports", reportsRoutes);
 
-// Basic health check
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date() });
+// Health check with DB status
+app.get("/health", async (req, res) => {
+  try {
+    // Optional: Check DB connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      database: "connected",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      timestamp: new Date().toISOString(),
+      database: "disconnected",
+      error: (error as any).message,
+    });
+  }
 });
 
 // Start server

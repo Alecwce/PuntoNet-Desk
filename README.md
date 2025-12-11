@@ -202,6 +202,40 @@ PuntoNet-Desk/
 - Para modo oscuro, se usa la clase `dark:` de Tailwind
 - Los archivos se almacenan en `server/uploads/`
 
+## 🚀 Despliegue (Deployment)
+
+Esta aplicación está configurada para desplegarse fácilmente en el stack moderno gratuito:
+
+- **Frontend**: [Vercel](https://vercel.com)
+- **Backend**: [Railway](https://railway.app)
+- **Base de Datos**: [Neon](https://neon.tech) (PostgreSQL)
+- **Archivos**: [Cloudinary](https://cloudinary.com)
+
+### 1. Configuración de Base de Datos (Neon)
+
+1. Crear proyecto en Neon.
+2. Obtener connection string (`DATABASE_URL`).
+3. Neon requiere `sslmode=require` y soporta `DIRECT_URL` para migraciones.
+
+### 2. Configuración de Archivos (Cloudinary)
+
+1. Crear cuenta en Cloudinary.
+2. Obtener `Cloud Name`, `API Key` y `API Secret`.
+
+### 3. Backend (Railway)
+
+1. Conectar repositorio GitHub a Railway.
+2. Configurar variables de entorno (ver `server/.env.example`).
+3. El proyecto detectará automáticamente `railway.json` y usará Nixpacks.
+4. **Build Command**: `cd server && npm install && npx prisma generate && npx prisma migrate deploy && npm run build`
+5. **Start Command**: `cd server && npm start`
+
+### 4. Frontend (Vercel)
+
+1. Importar proyecto a Vercel.
+2. Configurar variable de entorno: `VITE_API_URL` (URL de tu backend en Railway).
+3. Vercel detectará `vercel.json` y usará `dist` como directorio de salida.
+
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.

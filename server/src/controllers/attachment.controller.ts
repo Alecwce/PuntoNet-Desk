@@ -1,57 +1,42 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
-import multer from "multer";
-import {
-  uploadToCloudinary,
-  deleteFromCloudinary,
-} from "../services/cloudinary.service";
+import { upload as uploadMiddleware } from "../middleware/upload.middleware";
+import { uploader } from "../config/cloudinary.config";
 
-// Configure Multer for temporary storage (Cloudinary will handle final storage)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "/tmp"); // Temporary storage
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + "-" + file.originalname);
-  },
-});
-
-export const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit (Cloudinary free tier supports larger files)
-});
+export const upload = uploadMiddleware;
 
 export const uploadAttachment = async (req: Request, res: Response) => {
   const { id } = req.params; // Ticket ID
-  const { uploaderId } = req.body; // In real app, from auth token
+  // const { uploaderId } = req.body; // In real app, from auth token (middleware)
 
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
 
   try {
-    // Upload to Cloudinary
-    const cloudinaryResult = await uploadToCloudinary(
-      req.file,
-      `puntonet-desk/tickets/${id}`
-    );
+    // CloudinaryStorage (multer) already uploaded the file.
+    // req.file.path contains the secure URL.
+    // req.file.filename contains the public_id.
 
-    // Create attachment record in database with Cloudinary URL
     const attachment = await prisma.attachment.create({
       data: {
         filename: req.file.originalname,
-        path: cloudinaryResult.url, // Cloudinary secure URL
+        path: req.file.path, // Cloudinary URL
         mimetype: req.file.mimetype,
         size: req.file.size,
         ticketId: id,
-        uploaderId: uploaderId || "user-id-placeholder",
+        // Assuming default uploader if not present in request (should be fixed in auth middleware)
+        uploaderId: req.body.uploaderId || "user-id-placeholder",
       },
     });
 
     res.json(attachment);
   } catch (error) {
     console.error("Error uploading attachment:", error);
+    // Cleanup if DB fails
+    if (req.file && (req.file as any).filename) {
+      await uploader.destroy((req.file as any).filename);
+    }
     res.status(500).json({ error: "Failed to upload attachment" });
   }
 };
@@ -70,19 +55,24 @@ export const deleteAttachment = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "Attachment not found" });
     }
 
-    // Extract publicId from Cloudinary URL
-    // Format: https://res.cloudinary.com/{cloud_name}/image/upload/{version}/{publicId}.{ext}
-    const urlParts = attachment.path.split("/");
-    const publicIdWithExt = urlParts
-      .slice(urlParts.indexOf("upload") + 2)
-      .join("/");
-    const publicId = publicIdWithExt.substring(
-      0,
-      publicIdWithExt.lastIndexOf(".")
-    );
+    // Try to extract public_id from path
+    try {
+      const urlParts = attachment.path.split("/");
+      // Example: .../upload/v12345/puntonet-desk/filename.jpg
+      // We need: puntonet-desk/filename (without extension usually, depending on resource_type)
 
-    // Delete from Cloudinary
-    await deleteFromCloudinary(publicId);
+      // Simpler approach: if we moved to storing keys properly we'd simple use that.
+      // For now, let's try to parse or just ignore if it fails, relying on the DB delete.
+
+      // Regex to find public_id after "upload/" and version "v123/"
+      const regex = /\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/;
+      const match = attachment.path.match(regex);
+      if (match && match[1]) {
+        await uploader.destroy(match[1]);
+      }
+    } catch (err) {
+      console.warn("Failed to delete from Cloudinary:", err);
+    }
 
     // Delete from database
     await prisma.attachment.delete({
