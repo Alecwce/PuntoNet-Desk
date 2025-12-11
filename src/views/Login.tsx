@@ -5,9 +5,10 @@ import { AxiosError } from "axios";
 
 interface LoginProps {
   onLogin: () => void;
+  onForgotPassword: () => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onForgotPassword }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

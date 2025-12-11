@@ -2,9 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =================================================
+   PUNTONET SERVICE DESK - DESIGN SYSTEM
+   Modern Glassmorphism with Light/Dark Mode Support
+   ================================================= */
+
 @layer base {
+  /* Light Mode Variables */
   :root {
-    --background: 0 0% 100%;
+    --background: 210 20% 98%; /* slate-50 equivalent */
     --foreground: 222.2 84% 4.9%;
 
     --card: 0 0% 100%;
@@ -32,17 +38,23 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Glass Effect Variables - Light Mode */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   }
 
+  /* Dark Mode Variables */
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 6%; /* slate-900 equivalent */
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 8%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 8%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 217.2 91.2% 59.8%;
@@ -63,6 +75,11 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+
+    /* Glass Effect Variables - Dark Mode */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -71,11 +88,109 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-/* Custom Animations */
+/* =================================================
+   COMPONENT CLASSES - Glassmorphism System
+   ================================================= */
+
+@layer components {
+  /* Glass Panel - Main container effect */
+  .glass-panel {
+    @apply backdrop-blur-xl border shadow-xl;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* Glass Card - Elevated card with subtle glass */
+  .glass-card {
+    @apply backdrop-blur-md rounded-2xl border transition-all duration-300;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+  }
+  .glass-card:hover {
+    @apply shadow-lg;
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  /* Glass Input - Form inputs with glass effect */
+  .glass-input {
+    @apply w-full px-4 py-3 rounded-xl border transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50;
+    @apply placeholder:text-gray-400 dark:placeholder:text-gray-500;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--glass-border);
+  }
+  .glass-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(59, 130, 246, 0.5);
+  }
+
+  /* Glass Button - Primary action button */
+  .glass-button {
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300;
+    @apply bg-gradient-to-r from-blue-500 to-cyan-500 text-white;
+    @apply hover:shadow-lg hover:shadow-blue-500/30 hover:scale-[1.02];
+    @apply active:scale-[0.98];
+  }
+
+  /* Glass Button Secondary */
+  .glass-button-secondary {
+    @apply px-6 py-3 rounded-xl font-medium transition-all duration-300;
+    @apply backdrop-blur-md border;
+    background: var(--glass-bg);
+    border-color: var(--glass-border);
+  }
+  .glass-button-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  /* Glass Badge - Status indicators */
+  .glass-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+    @apply backdrop-blur-sm border;
+  }
+  .glass-badge-success {
+    @apply glass-badge bg-green-500/20 text-green-400 border-green-500/30;
+  }
+  .glass-badge-warning {
+    @apply glass-badge bg-yellow-500/20 text-yellow-400 border-yellow-500/30;
+  }
+  .glass-badge-error {
+    @apply glass-badge bg-red-500/20 text-red-400 border-red-500/30;
+  }
+  .glass-badge-info {
+    @apply glass-badge bg-blue-500/20 text-blue-400 border-blue-500/30;
+  }
+
+  /* Glass Table Row */
+  .glass-table-row {
+    @apply transition-all duration-200;
+  }
+  .glass-table-row:hover {
+    @apply bg-white/5;
+  }
+
+  /* Glass Modal Overlay */
+  .glass-overlay {
+    @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50;
+  }
+
+  /* Glass Modal Content */
+  .glass-modal {
+    @apply glass-panel rounded-2xl p-6 shadow-2xl;
+    @apply border-white/10 dark:border-white/5;
+  }
+}
+
+/* =================================================
+   CUSTOM ANIMATIONS
+   ================================================= */
+
 @keyframes fade-in {
   from {
     opacity: 0;
@@ -84,6 +199,28 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -107,12 +244,60 @@
   }
 }
 
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+  }
+}
+
 @layer utilities {
   .animate-fade-in {
     animation: fade-in 0.6s ease-out;
   }
-
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out;
+  }
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
   .animate-shake {
     animation: shake 0.5s ease-in-out;
   }
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+}
+
+/* =================================================
+   SCROLLBAR STYLING (Glass Theme)
+   ================================================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "../lib/api";
 import { CURRENT_USER } from "../constants";
 import { TwoFactorSetup } from "../components/TwoFactorSetup";
+import { Icon } from "../components/Icon";
 
 interface User {
   id: string;
@@ -57,7 +58,6 @@ export const Settings: React.FC = () => {
     }
   }, [activeTab]);
 
-  // Fetch 2FA status on mount
   useEffect(() => {
     const fetch2FAStatus = async () => {
       try {
@@ -90,8 +90,7 @@ export const Settings: React.FC = () => {
     }
 
     try {
-      const userId = CURRENT_USER.id;
-      await api.put(`/users/${userId}`, {
+      await api.put(`/users/${CURRENT_USER.id}`, {
         name: profileData.name,
         avatar: profileData.avatar,
         password: profileData.password || undefined,
@@ -110,7 +109,6 @@ export const Settings: React.FC = () => {
       alert("Por favor completa todos los campos obligatorios");
       return;
     }
-
     try {
       await api.post("/users", userFormData);
       alert("Usuario creado correctamente");
@@ -124,7 +122,6 @@ export const Settings: React.FC = () => {
       });
       fetchUsers();
     } catch (error: any) {
-      console.error("Error creating user:", error);
       alert(error.response?.data?.error || "Error al crear usuario");
     }
   };
@@ -132,7 +129,6 @@ export const Settings: React.FC = () => {
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userToEdit) return;
-
     try {
       await api.patch(`/users/${userToEdit.id}`, {
         name: userFormData.name,
@@ -153,7 +149,6 @@ export const Settings: React.FC = () => {
       });
       fetchUsers();
     } catch (error: any) {
-      console.error("Error updating user:", error);
       alert(error.response?.data?.error || "Error al actualizar usuario");
     }
   };
@@ -170,14 +165,8 @@ export const Settings: React.FC = () => {
     setIsEditModalOpen(true);
   };
 
-  const handleDeleteClick = (id: string) => {
-    setUserToDelete(id);
-    setIsDeleteModalOpen(true);
-  };
-
   const confirmDeleteUser = async () => {
     if (!userToDelete) return;
-
     try {
       await api.delete(`/users/${userToDelete}`);
       alert("Usuario eliminado correctamente");
@@ -185,7 +174,6 @@ export const Settings: React.FC = () => {
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
     } catch (error: any) {
-      console.error("Error deleting user:", error);
       alert(
         `Error al eliminar usuario: ${
           error.response?.data?.error || error.message
@@ -195,17 +183,24 @@ export const Settings: React.FC = () => {
   };
 
   return (
-    <div className="p-8 flex flex-col gap-6 h-full">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-        Configuración
-      </h1>
+    <div className="p-6 lg:p-8 flex flex-col gap-6 h-full animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Configuración
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Gestiona tu perfil y preferencias
+          </p>
+        </div>
+      </div>
 
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div className="flex border-b border-gray-200/50 dark:border-white/10">
         <button
-          className={`px-4 py-2 font-medium text-sm transition-colors ${
+          className={`px-6 py-3 font-medium text-sm transition-all border-b-2 ${
             activeTab === "profile"
-              ? "text-primary border-b-2 border-primary"
-              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+              : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-transparent"
           }`}
           onClick={() => setActiveTab("profile")}
         >
@@ -213,10 +208,10 @@ export const Settings: React.FC = () => {
         </button>
         {CURRENT_USER.role === "ADMIN" && (
           <button
-            className={`px-4 py-2 font-medium text-sm transition-colors ${
+            className={`px-6 py-3 font-medium text-sm transition-all border-b-2 ${
               activeTab === "users"
-                ? "text-primary border-b-2 border-primary"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border-transparent"
             }`}
             onClick={() => setActiveTab("users")}
           >
@@ -227,51 +222,53 @@ export const Settings: React.FC = () => {
 
       <div className="flex-1 overflow-y-auto">
         {activeTab === "profile" && (
-          <>
-            <div className="max-w-2xl bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
-                Editar Perfil
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl animate-fade-in-up">
+            <div className="glass-panel p-8 rounded-2xl border border-gray-200/50 dark:border-white/10">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Icon name="badge" className="text-blue-500" />
+                Información Personal
               </h2>
-              <form onSubmit={handleProfileUpdate} className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <div
-                      className="w-24 h-24 rounded-full bg-gray-200 bg-cover bg-center border-2 border-white dark:border-gray-700 shadow-md"
-                      style={{
-                        backgroundImage: `url("${
-                          profileData.avatar ||
-                          "https://ui-avatars.com/api/?name=" + profileData.name
-                        }")`,
-                      }}
-                    ></div>
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      URL del Avatar
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      value={profileData.avatar}
-                      onChange={(e) =>
-                        setProfileData({
-                          ...profileData,
-                          avatar: e.target.value,
-                        })
-                      }
-                      placeholder="https://..."
-                    />
+
+              <div className="flex flex-col sm:flex-row items-center gap-6 mb-8">
+                <div className="relative group">
+                  <div
+                    className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-400 to-cyan-400 bg-cover bg-center shadow-lg group-hover:shadow-blue-500/30 transition-all duration-300"
+                    style={{
+                      backgroundImage: `url("${
+                        profileData.avatar ||
+                        "https://ui-avatars.com/api/?name=" + profileData.name
+                      }")`,
+                    }}
+                  ></div>
+                  <div className="absolute -bottom-2 -right-2 bg-white dark:bg-slate-800 p-1.5 rounded-lg shadow-sm border border-gray-100 dark:border-white/10">
+                    <Icon name="edit" className="text-xs text-gray-500" />
                   </div>
                 </div>
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                    URL del Avatar
+                  </label>
+                  <input
+                    type="text"
+                    className="glass-input"
+                    value={profileData.avatar}
+                    onChange={(e) =>
+                      setProfileData({ ...profileData, avatar: e.target.value })
+                    }
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
 
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                     Nombre Completo
                   </label>
                   <input
                     type="text"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="glass-input"
                     value={profileData.name}
                     onChange={(e) =>
                       setProfileData({ ...profileData, name: e.target.value })
@@ -281,12 +278,12 @@ export const Settings: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                       Nueva Contraseña
                     </label>
                     <input
                       type="password"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="glass-input"
                       value={profileData.password}
                       onChange={(e) =>
                         setProfileData({
@@ -294,16 +291,16 @@ export const Settings: React.FC = () => {
                           password: e.target.value,
                         })
                       }
-                      placeholder="Dejar en blanco para mantener"
+                      placeholder="••••••••"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                       Confirmar Contraseña
                     </label>
                     <input
                       type="password"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="glass-input"
                       value={profileData.confirmPassword}
                       onChange={(e) =>
                         setProfileData({
@@ -311,16 +308,13 @@ export const Settings: React.FC = () => {
                           confirmPassword: e.target.value,
                         })
                       }
-                      placeholder="Confirmar nueva contraseña"
+                      placeholder="••••••••"
                     />
                   </div>
                 </div>
 
                 <div className="pt-4 flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 shadow-sm font-medium"
-                  >
+                  <button type="submit" className="glass-button px-6 py-2.5">
                     Guardar Cambios
                   </button>
                 </div>
@@ -328,8 +322,9 @@ export const Settings: React.FC = () => {
             </div>
 
             {/* 2FA Security Section */}
-            <div className="max-w-2xl mt-6">
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
+            <div className="glass-panel p-8 rounded-2xl border border-gray-200/50 dark:border-white/10 h-fit">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                <Icon name="security" className="text-green-500" />
                 Seguridad Extra
               </h2>
               <TwoFactorSetup
@@ -337,130 +332,141 @@ export const Settings: React.FC = () => {
                 onStatusChange={setIs2FAEnabled}
               />
             </div>
-          </>
+          </div>
         )}
 
         {activeTab === "users" && CURRENT_USER.role === "ADMIN" && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-gray-800 dark:text-white">
+          <div className="animate-fade-in-up">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Icon name="group" className="text-purple-500" />
                 Usuarios del Sistema
               </h2>
               <button
                 onClick={() => setIsCreateModalOpen(true)}
-                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 shadow-sm font-medium"
+                className="glass-button flex items-center gap-2"
               >
-                + Crear Usuario
+                <Icon name="person_add" />
+                Crear Usuario
               </button>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700/50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Usuario
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Rol
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Fecha Registro
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Acciones
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {users.map((user) => (
-                    <tr
-                      key={user.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 flex-shrink-0">
-                            <img
-                              className="h-10 w-10 rounded-full"
-                              src={
-                                user.avatar ||
-                                `https://ui-avatars.com/api/?name=${user.name}`
-                              }
-                              alt=""
-                            />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {user.name}
+            <div className="rounded-2xl backdrop-blur-md overflow-hidden bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50/50 dark:bg-white/5">
+                    <tr>
+                      {["Usuario", "Email", "Rol", "Registro", "Acciones"].map(
+                        (h) => (
+                          <th
+                            key={h}
+                            className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                          >
+                            {h}
+                          </th>
+                        )
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                    {users.map((user) => (
+                      <tr
+                        key={user.id}
+                        className="hover:bg-blue-50/50 dark:hover:bg-white/5 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="h-10 w-10 flex-shrink-0">
+                              <img
+                                className="h-10 w-10 rounded-xl"
+                                src={
+                                  user.avatar ||
+                                  `https://ui-avatars.com/api/?name=${user.name}`
+                                }
+                                alt=""
+                              />
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {user.name}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500 dark:text-gray-300">
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
                           {user.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${
-                          user.role === "ADMIN"
-                            ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200"
-                            : user.role === "AGENT"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
-                            : "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
-                        }`}
-                        >
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button
-                          onClick={() => openEditModal(user)}
-                          className="text-primary hover:text-primary/80 mr-4"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(user.id)}
-                          className="text-red-600 hover:text-red-900 dark:hover:text-red-400"
-                        >
-                          Eliminar
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                            ${
+                              user.role === "ADMIN"
+                                ? "bg-purple-500/20 text-purple-700 dark:text-purple-300"
+                                : ""
+                            }
+                            ${
+                              user.role === "AGENT"
+                                ? "bg-blue-500/20 text-blue-700 dark:text-blue-300"
+                                : ""
+                            }
+                            ${
+                              user.role === "CLIENT"
+                                ? "bg-green-500/20 text-green-700 dark:text-green-300"
+                                : ""
+                            }
+                          `}
+                          >
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium">
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => openEditModal(user)}
+                              className="text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(user.id)}
+                              className="text-red-600 dark:text-red-400 hover:underline"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Create User Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Crear Nuevo Usuario
+      {/* Modals - Shared styling */}
+      {(isCreateModalOpen || (isEditModalOpen && userToEdit)) && (
+        <div className="fixed inset-0 glass-overlay flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 w-full max-w-md shadow-2xl border border-gray-200 dark:border-white/10 animate-scale-in">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+              {isCreateModalOpen ? "Crear Nuevo Usuario" : "Editar Usuario"}
             </h3>
-            <form onSubmit={handleCreateUser} className="space-y-4">
+            <form
+              onSubmit={isCreateModalOpen ? handleCreateUser : handleEditUser}
+              className="space-y-5"
+            >
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                   Nombre Completo *
                 </label>
                 <input
                   type="text"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="glass-input"
                   value={userFormData.name}
                   onChange={(e) =>
                     setUserFormData({ ...userFormData, name: e.target.value })
@@ -468,13 +474,13 @@ export const Settings: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                   Email *
                 </label>
                 <input
                   type="email"
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="glass-input"
                   value={userFormData.email}
                   onChange={(e) =>
                     setUserFormData({ ...userFormData, email: e.target.value })
@@ -482,13 +488,13 @@ export const Settings: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Contraseña *
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
+                  {isCreateModalOpen ? "Contraseña *" : "Nueva Contraseña"}
                 </label>
                 <input
                   type="password"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  required={isCreateModalOpen}
+                  className="glass-input"
                   value={userFormData.password}
                   onChange={(e) =>
                     setUserFormData({
@@ -496,15 +502,18 @@ export const Settings: React.FC = () => {
                       password: e.target.value,
                     })
                   }
+                  placeholder={
+                    !isCreateModalOpen ? "Dejar en blanco para mantener" : ""
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                   Rol *
                 </label>
                 <select
                   required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="glass-input"
                   value={userFormData.role}
                   onChange={(e) =>
                     setUserFormData({ ...userFormData, role: e.target.value })
@@ -516,12 +525,12 @@ export const Settings: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">
                   URL del Avatar
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="glass-input"
                   value={userFormData.avatar}
                   onChange={(e) =>
                     setUserFormData({ ...userFormData, avatar: e.target.value })
@@ -529,123 +538,19 @@ export const Settings: React.FC = () => {
                   placeholder="https://..."
                 />
               </div>
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setIsEditModalOpen(false);
+                  }}
+                  className="glass-button-secondary flex-1"
                 >
                   Cancelar
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                >
-                  Crear Usuario
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit User Modal */}
-      {isEditModalOpen && userToEdit && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-              Editar Usuario
-            </h3>
-            <form onSubmit={handleEditUser} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nombre Completo *
-                </label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  value={userFormData.name}
-                  onChange={(e) =>
-                    setUserFormData({ ...userFormData, name: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  value={userFormData.email}
-                  onChange={(e) =>
-                    setUserFormData({ ...userFormData, email: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nueva Contraseña
-                </label>
-                <input
-                  type="password"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  value={userFormData.password}
-                  onChange={(e) =>
-                    setUserFormData({
-                      ...userFormData,
-                      password: e.target.value,
-                    })
-                  }
-                  placeholder="Dejar en blanco para mantener"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Rol *
-                </label>
-                <select
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  value={userFormData.role}
-                  onChange={(e) =>
-                    setUserFormData({ ...userFormData, role: e.target.value })
-                  }
-                >
-                  <option value="CLIENT">Cliente</option>
-                  <option value="AGENT">Agente</option>
-                  <option value="ADMIN">Administrador</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  URL del Avatar
-                </label>
-                <input
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  value={userFormData.avatar}
-                  onChange={(e) =>
-                    setUserFormData({ ...userFormData, avatar: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="flex gap-2 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
-                >
-                  Actualizar Usuario
+                <button type="submit" className="glass-button flex-1">
+                  {isCreateModalOpen ? "Crear Usuario" : "Actualizar"}
                 </button>
               </div>
             </form>
@@ -655,25 +560,28 @@ export const Settings: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="fixed inset-0 glass-overlay flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-gray-200 dark:border-white/10 animate-scale-in">
+            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600 dark:text-red-400">
+              <Icon name="warning" className="text-2xl" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">
               ¿Eliminar usuario?
             </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-6">
+            <p className="text-gray-600 dark:text-gray-300 mb-6 text-center text-sm">
               Esta acción no se puede deshacer. Se eliminarán todos los datos
-              asociados al usuario.
+              asociados.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                className="glass-button-secondary flex-1"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmDeleteUser}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-4 py-2 flex-1 transition-all shadow-lg shadow-red-500/30"
               >
                 Eliminar
               </button>

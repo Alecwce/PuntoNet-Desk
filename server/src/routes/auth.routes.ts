@@ -9,6 +9,8 @@ import {
   validate2FALogin,
   disable2FA,
   get2FAStatus,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/auth.controller";
 
 const router = Router();
@@ -16,6 +18,8 @@ const router = Router();
 // Public routes
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 // 2FA validation during login (requires temp token, not full auth)
 router.post("/2fa/validate-login", validate2FALogin);

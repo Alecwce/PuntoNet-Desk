@@ -11,9 +11,7 @@ interface Client {
   avatar?: string;
   createdAt: string;
   updatedAt: string;
-  _count?: {
-    ticketsCreated: number;
-  };
+  _count?: { ticketsCreated: number };
 }
 
 interface PaginatedResponse {
@@ -48,13 +46,13 @@ export const Clients: React.FC = () => {
     fetchClients();
   }, [search, page]);
 
-  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         activeMenuClientId &&
-        !(event.target as Element).closest(".action-menu-trigger") &&
-        !(event.target as Element).closest(".action-menu-content")
+        !(event.target as Element).closest(
+          ".action-menu-trigger, .action-menu-content"
+        )
       ) {
         setActiveMenuClientId(null);
       }
@@ -85,11 +83,9 @@ export const Clients: React.FC = () => {
       await api.post("/clients", data);
       setIsModalOpen(false);
       fetchClients();
-    } catch (error: any) {
-      console.error("Error creating client:", error);
-      const errorMessage =
-        error.response?.data?.error || "Error al crear cliente";
-      alert(errorMessage);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err.response?.data?.error || "Error al crear cliente");
     }
   };
 
@@ -102,11 +98,9 @@ export const Clients: React.FC = () => {
       setIsModalOpen(false);
       setClientToEdit(null);
       fetchClients();
-    } catch (error: any) {
-      console.error("Error updating client:", error);
-      const errorMessage =
-        error.response?.data?.error || "Error al actualizar cliente";
-      alert(errorMessage);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      alert(err.response?.data?.error || "Error al actualizar cliente");
     }
   };
 
@@ -116,32 +110,17 @@ export const Clients: React.FC = () => {
       setClientToDeleteId(null);
       setIsDeleteModalOpen(false);
       fetchClients();
-    } catch (error) {
-      console.error("Error deleting client:", error);
+    } catch {
       alert("Error al eliminar cliente");
     }
   };
 
-  const handleEditClick = (e: React.MouseEvent, client: Client) => {
-    e.stopPropagation();
-    setClientToEdit(client);
-    setIsModalOpen(true);
-    setActiveMenuClientId(null);
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    setClientToDeleteId(id);
-    setIsDeleteModalOpen(true);
-    setActiveMenuClientId(null);
-  };
-
   return (
-    <div className="p-8 flex flex-col gap-6 h-full">
+    <div className="p-6 lg:p-8 flex flex-col gap-6 h-full animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Gestión de Clientes
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -154,23 +133,27 @@ export const Clients: React.FC = () => {
               setClientToEdit(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+            className="glass-button flex items-center gap-2"
           >
-            <Icon name="add" />
-            <span>Nuevo Cliente</span>
+            <Icon name="person_add" />
+            Nuevo Cliente
           </button>
         )}
       </div>
 
       {/* Search */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <div className="relative max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
           <Icon name="search" className="text-gray-400" />
         </div>
         <input
           type="text"
           placeholder="Buscar por nombre o email..."
-          className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50"
+          className="w-full pl-11 pr-4 py-3 rounded-xl transition-all duration-200
+                     bg-white/80 dark:bg-white/5 backdrop-blur-md
+                     border border-gray-200/50 dark:border-white/10
+                     focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20
+                     text-gray-900 dark:text-white placeholder:text-gray-400"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -180,134 +163,151 @@ export const Clients: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex-1 flex flex-col">
+      <div
+        className="rounded-2xl backdrop-blur-md overflow-hidden flex-1 flex flex-col
+                      bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10"
+      >
         <div className="overflow-x-auto flex-1">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Tickets Creados
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Fecha de Registro
-                </th>
-                {isAdmin && (
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">
-                    Acciones
-                  </th>
-                )}
+            <thead>
+              <tr className="bg-gray-50/50 dark:bg-white/5">
+                {["Cliente", "Email", "Tickets", "Registro", isAdmin && ""]
+                  .filter(Boolean)
+                  .map((h) => (
+                    <th
+                      key={h}
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              {clients.map((client) => (
-                <tr
-                  key={client.id}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-gray-200"
-                        style={{
-                          backgroundImage: `url("${
-                            client.avatar ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              client.name
-                            )}&background=random`
-                          }")`,
-                        }}
-                      ></div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {client.name}
+            <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+              {clients.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={isAdmin ? 5 : 4}
+                    className="px-6 py-16 text-center"
+                  >
+                    <Icon
+                      name="people"
+                      className="text-5xl text-gray-300 dark:text-gray-600 mb-3"
+                    />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      No se encontraron clientes
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                clients.map((client) => (
+                  <tr
+                    key={client.id}
+                    className="hover:bg-blue-50/50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 bg-cover bg-center
+                                     border-2 border-white dark:border-slate-800"
+                          style={{
+                            backgroundImage: client.avatar
+                              ? `url("${client.avatar}")`
+                              : undefined,
+                          }}
+                        >
+                          {!client.avatar && (
+                            <div className="w-full h-full flex items-center justify-center text-white font-bold">
+                              {client.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {client.name}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      {client.email}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-600 dark:text-blue-400">
+                        <Icon name="confirmation_number" className="text-xs" />
+                        {client._count?.ticketsCreated || 0}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {client.email}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                      {client._count?.ticketsCreated || 0} tickets
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                    {new Date(client.createdAt).toLocaleDateString("es-ES")}
-                  </td>
-                  {isAdmin && (
-                    <td className="px-4 py-3 relative">
-                      <button
-                        className="text-gray-400 hover:text-gray-600 dark:hover:text-white action-menu-trigger p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenuClientId(
-                            activeMenuClientId === client.id ? null : client.id
-                          );
-                        }}
-                      >
-                        <Icon name="more_vert" />
-                      </button>
-                      {activeMenuClientId === client.id && (
-                        <div className="action-menu-content absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                          <div className="py-1">
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      {new Date(client.createdAt).toLocaleDateString("es-ES")}
+                    </td>
+                    {isAdmin && (
+                      <td className="px-6 py-4 relative">
+                        <button
+                          className="action-menu-trigger p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuClientId(
+                              activeMenuClientId === client.id
+                                ? null
+                                : client.id
+                            );
+                          }}
+                        >
+                          <Icon name="more_vert" />
+                        </button>
+                        {activeMenuClientId === client.id && (
+                          <div className="action-menu-content absolute right-4 top-12 w-40 rounded-xl overflow-hidden bg-white dark:bg-slate-800 shadow-xl border border-gray-200 dark:border-white/10 z-50 animate-scale-in">
                             <button
-                              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 gap-2"
-                              onClick={(e) => handleEditClick(e, client)}
+                              className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-white/5 gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setClientToEdit(client);
+                                setIsModalOpen(true);
+                                setActiveMenuClientId(null);
+                              }}
                             >
-                              <Icon
-                                name="edit"
-                                className="text-gray-500 text-base"
-                              />{" "}
+                              <Icon name="edit" className="text-gray-400" />{" "}
                               Editar
                             </button>
                             <button
-                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 gap-2"
-                              onClick={(e) => handleDeleteClick(e, client.id)}
+                              className="flex items-center w-full px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 gap-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setClientToDeleteId(client.id);
+                                setIsDeleteModalOpen(true);
+                                setActiveMenuClientId(null);
+                              }}
                             >
-                              <Icon name="delete" className="text-base" />{" "}
-                              Eliminar
+                              <Icon name="delete" /> Eliminar
                             </button>
                           </div>
-                        </div>
-                      )}
-                    </td>
-                  )}
-                </tr>
-              ))}
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-
-          {clients.length === 0 && (
-            <div className="text-center py-12 text-gray-400">
-              <Icon name="people" className="text-6xl mb-4 mx-auto" />
-              <p>No se encontraron clientes</p>
-            </div>
-          )}
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-900/50">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="p-4 border-t border-gray-200/50 dark:border-white/10 flex justify-between items-center">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               Página {page} de {totalPages}
-            </div>
+            </span>
             <div className="flex gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 disabled:opacity-50"
               >
                 Anterior
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20 disabled:opacity-50"
               >
                 Siguiente
               </button>
@@ -327,7 +327,6 @@ export const Clients: React.FC = () => {
         onEdit={handleEditClient}
         clientToEdit={clientToEdit}
       />
-
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

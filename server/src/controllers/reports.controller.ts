@@ -246,3 +246,91 @@ function getWeekNumber(date: Date): number {
   const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
   return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
 }
+
+// Get comprehensive dashboard summary
+export const getDashboardSummary = async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    // Run all queries in parallel
+    const [
+      totalTickets,
+      openTickets,
+      resolvedTickets,
+      usersCount,
+      clientsCount,
+      recentTickets,
+      timelineRaw,
+    ] = await Promise.all([
+      // Stats
+      prisma.ticket.count(),
+      prisma.ticket.count({ where: { status: "OPEN" } }),
+      prisma.ticket.count({ where: { status: "RESOLVED" } }),
+      prisma.user.count(),
+      prisma.user.count({ where: { role: "CLIENT" } }),
+
+      // Recent Tickets
+      prisma.ticket.findMany({
+        take: 5,
+        orderBy: { updatedAt: "desc" },
+        include: { assignee: true, creator: true },
+      }),
+
+      // Timeline (Last 7 days)
+      prisma.ticket.findMany({
+        where: {
+          createdAt: {
+            gte: sevenDaysAgo,
+          },
+        },
+        select: {
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    // Process Timeline Data (Group by Day)
+    const timeline: { name: string; date: string; tickets: number }[] = [];
+    const days = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
+
+    // Initialize last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const dateKey = d.toISOString().split("T")[0]; // YYYY-MM-DD
+      const dayName = days[d.getDay()];
+      timeline.push({ name: dayName, date: dateKey, tickets: 0 });
+    }
+
+    // Fill counts
+    timelineRaw.forEach((t) => {
+      const dateKey = new Date(t.createdAt).toISOString().split("T")[0];
+      const entry = timeline.find((item) => item.date === dateKey);
+      if (entry) {
+        entry.tickets++;
+      }
+    });
+
+    res.json({
+      stats: {
+        tickets: {
+          total: totalTickets,
+          open: openTickets,
+          resolved: resolvedTickets,
+        },
+        users: {
+          total: usersCount,
+          clients: clientsCount,
+        },
+      },
+      recentTickets,
+      timeline,
+    });
+  } catch (error) {
+    console.error("Error fetching dashboard summary:", error);
+    res.status(500).json({ error: "Failed to fetch dashboard summary" });
+  }
+};

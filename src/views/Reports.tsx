@@ -25,31 +25,22 @@ interface DashboardStats {
     resolved: number;
     closed: number;
   };
-  users: {
-    total: number;
-    clients: number;
-    agents: number;
-  };
-  knowledgeBase: {
-    published: number;
-  };
+  users: { total: number; clients: number; agents: number };
+  knowledgeBase: { published: number };
 }
 
 interface StatusData {
   status: string;
   count: number;
 }
-
 interface PriorityData {
   priority: string;
   count: number;
 }
-
 interface TimelineData {
   date: string;
   count: number;
 }
-
 interface AgentData {
   id: string;
   name: string;
@@ -82,7 +73,6 @@ export const Reports: React.FC = () => {
         ...(dateRange.start && { startDate: dateRange.start }),
         ...(dateRange.end && { endDate: dateRange.end }),
       };
-
       const [statsRes, statusRes, priorityRes, timelineRes, agentsRes] =
         await Promise.all([
           api.get("/reports/stats", { params }),
@@ -93,7 +83,6 @@ export const Reports: React.FC = () => {
           }),
           api.get("/reports/top-agents"),
         ]);
-
       setStats(statsRes.data);
       setStatusData(statusRes.data);
       setPriorityData(priorityRes.data);
@@ -106,14 +95,13 @@ export const Reports: React.FC = () => {
     }
   };
 
-  const statusLabels: { [key: string]: string } = {
+  const statusLabels: Record<string, string> = {
     OPEN: "Abiertos",
     IN_PROGRESS: "En Progreso",
     RESOLVED: "Resueltos",
     CLOSED: "Cerrados",
   };
-
-  const priorityLabels: { [key: string]: string } = {
+  const priorityLabels: Record<string, string> = {
     LOW: "Baja",
     MEDIUM: "Media",
     HIGH: "Alta",
@@ -124,11 +112,8 @@ export const Reports: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <Icon
-            name="hourglass_empty"
-            className="text-6xl text-gray-400 animate-pulse"
-          />
-          <p className="mt-4 text-gray-500 dark:text-gray-400">
+          <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">
             Cargando reportes...
           </p>
         </div>
@@ -136,12 +121,39 @@ export const Reports: React.FC = () => {
     );
   }
 
+  const statCards = [
+    {
+      label: "Total Tickets",
+      value: stats?.tickets.total || 0,
+      icon: "confirmation_number",
+      gradient: "from-blue-500 to-blue-600",
+    },
+    {
+      label: "Resueltos",
+      value: stats?.tickets.resolved || 0,
+      icon: "task_alt",
+      gradient: "from-green-500 to-emerald-600",
+    },
+    {
+      label: "En Progreso",
+      value: stats?.tickets.inProgress || 0,
+      icon: "pending",
+      gradient: "from-orange-500 to-amber-600",
+    },
+    {
+      label: "Total Usuarios",
+      value: stats?.users.total || 0,
+      icon: "group",
+      gradient: "from-purple-500 to-violet-600",
+    },
+  ];
+
   return (
-    <div className="p-8 space-y-6">
+    <div className="p-6 lg:p-8 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Reportes y Estadísticas
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -150,28 +162,26 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* Date Range Filter */}
-        <div className="flex gap-4 items-center">
-          <div className="flex gap-2">
-            <input
-              type="date"
-              value={dateRange.start}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, start: e.target.value })
-              }
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-            />
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) =>
-                setDateRange({ ...dateRange, end: e.target.value })
-              }
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
-            />
-          </div>
+        <div className="flex flex-wrap gap-3 items-center">
+          <input
+            type="date"
+            value={dateRange.start}
+            onChange={(e) =>
+              setDateRange({ ...dateRange, start: e.target.value })
+            }
+            className="px-4 py-2 rounded-xl text-sm bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 text-gray-900 dark:text-white"
+          />
+          <input
+            type="date"
+            value={dateRange.end}
+            onChange={(e) =>
+              setDateRange({ ...dateRange, end: e.target.value })
+            }
+            className="px-4 py-2 rounded-xl text-sm bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 text-gray-900 dark:text-white"
+          />
           <button
             onClick={() => setDateRange({ start: "", end: "" })}
-            className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors text-sm"
+            className="px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/20"
           >
             Limpiar
           </button>
@@ -179,69 +189,36 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-blue-100 text-sm font-medium">Total Tickets</p>
-              <h3 className="text-3xl font-bold mt-2">
-                {stats?.tickets.total || 0}
-              </h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statCards.map((card, idx) => (
+          <div
+            key={idx}
+            className={`relative rounded-2xl p-6 text-white overflow-hidden bg-gradient-to-br ${card.gradient}`}
+          >
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <p className="text-white/80 text-sm font-medium">
+                  {card.label}
+                </p>
+                <h3 className="text-3xl font-bold mt-1">{card.value}</h3>
+              </div>
+              <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
+                <Icon name={card.icon} className="text-2xl" />
+              </div>
             </div>
-            <Icon
-              name="confirmation_number"
-              className="text-5xl text-blue-200"
-            />
           </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">Resueltos</p>
-              <h3 className="text-3xl font-bold mt-2">
-                {stats?.tickets.resolved || 0}
-              </h3>
-            </div>
-            <Icon name="task_alt" className="text-5xl text-green-200" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-orange-100 text-sm font-medium">En Progreso</p>
-              <h3 className="text-3xl font-bold mt-2">
-                {stats?.tickets.inProgress || 0}
-              </h3>
-            </div>
-            <Icon name="pending" className="text-5xl text-orange-200" />
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">
-                Total Usuarios
-              </p>
-              <h3 className="text-3xl font-bold mt-2">
-                {stats?.users.total || 0}
-              </h3>
-            </div>
-            <Icon name="group" className="text-5xl text-purple-200" />
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Tickets por Estado */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+        {/* Pie Chart */}
+        <div className="rounded-2xl backdrop-blur-md p-6 bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Tickets por Estado
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie
                 data={statusData}
@@ -249,63 +226,93 @@ export const Reports: React.FC = () => {
                 nameKey="status"
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
-                label={(entry) =>
-                  `${statusLabels[entry.status]}: ${entry.count}`
-                }
+                outerRadius={90}
+                label={(e) => `${statusLabels[e.status]}: ${e.count}`}
               >
-                {statusData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
+                {statusData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "rgba(15, 23, 42, 0.9)",
+                  border: "none",
+                  borderRadius: "12px",
+                  color: "#fff",
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Tickets por Prioridad */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+        {/* Bar Chart */}
+        <div className="rounded-2xl backdrop-blur-md p-6 bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Tickets por Prioridad
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={280}>
             <BarChart data={priorityData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.1)"
+              />
               <XAxis
                 dataKey="priority"
-                tickFormatter={(value) => priorityLabels[value] || value}
+                tickFormatter={(v) => priorityLabels[v] || v}
+                tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                axisLine={false}
               />
-              <YAxis />
+              <YAxis
+                tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                axisLine={false}
+              />
               <Tooltip
-                labelFormatter={(value) => priorityLabels[value] || value}
+                contentStyle={{
+                  backgroundColor: "rgba(15, 23, 42, 0.9)",
+                  border: "none",
+                  borderRadius: "12px",
+                  color: "#fff",
+                }}
+                labelFormatter={(v) => priorityLabels[v] || v}
               />
-              <Legend />
-              <Bar dataKey="count" fill="#3B82F6" name="Cantidad" />
+              <Bar dataKey="count" fill="#3B82F6" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Timeline Chart */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+      <div className="rounded-2xl backdrop-blur-md p-6 bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Tendencia de Tickets
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={280}>
           <LineChart data={timelineData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(255,255,255,0.1)"
+            />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: "#9CA3AF", fontSize: 12 }}
+              axisLine={false}
+            />
+            <YAxis tick={{ fill: "#9CA3AF", fontSize: 12 }} axisLine={false} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "rgba(15, 23, 42, 0.9)",
+                border: "none",
+                borderRadius: "12px",
+                color: "#fff",
+              }}
+            />
             <Legend />
             <Line
               type="monotone"
               dataKey="count"
               stroke="#3B82F6"
-              strokeWidth={2}
+              strokeWidth={3}
+              dot={{ fill: "#3B82F6", strokeWidth: 2 }}
               name="Tickets Creados"
             />
           </LineChart>
@@ -313,33 +320,46 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Top Agents */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+      <div className="rounded-2xl backdrop-blur-md p-6 bg-white/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/10">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Agentes Destacados
         </h3>
         <div className="space-y-4">
           {topAgents.map((agent, index) => (
             <div
               key={agent.id}
-              className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+              className="flex items-center justify-between p-4 rounded-xl bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5"
             >
               <div className="flex items-center gap-4">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-white font-bold">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm ${
+                    index === 0
+                      ? "bg-gradient-to-br from-yellow-400 to-orange-500"
+                      : index === 1
+                      ? "bg-gradient-to-br from-gray-300 to-gray-400"
+                      : index === 2
+                      ? "bg-gradient-to-br from-orange-600 to-orange-700"
+                      : "bg-gradient-to-br from-blue-400 to-cyan-500"
+                  }`}
+                >
                   #{index + 1}
                 </div>
                 <div
-                  className="w-12 h-12 rounded-full bg-cover bg-center border-2 border-gray-200 dark:border-gray-600"
+                  className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 bg-cover bg-center border-2 border-white dark:border-slate-700"
                   style={{
-                    backgroundImage: `url("${
-                      agent.avatar ||
-                      `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                        agent.name
-                      )}`
-                    }")`,
+                    backgroundImage: agent.avatar
+                      ? `url("${agent.avatar}")`
+                      : undefined,
                   }}
-                ></div>
+                >
+                  {!agent.avatar && (
+                    <div className="w-full h-full flex items-center justify-center text-white font-bold">
+                      {agent.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
                 <div>
-                  <p className="font-semibold text-gray-800 dark:text-white">
+                  <p className="font-semibold text-gray-900 dark:text-white">
                     {agent.name}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -347,9 +367,9 @@ export const Reports: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-8 text-center">
+              <div className="flex gap-6 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-gray-800 dark:text-white">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {agent.totalTickets}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">

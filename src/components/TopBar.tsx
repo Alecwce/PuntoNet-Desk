@@ -1,51 +1,26 @@
 import React from "react";
 import { Icon } from "./Icon";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface TopBarProps {
   title?: string;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ title }) => {
-  const [isDarkMode, setIsDarkMode] = React.useState(() => {
-    // Check local storage or system preference
-    if (
-      localStorage.theme === "dark" ||
-      (!("theme" in localStorage) &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
-      return true;
-    }
-    return false;
-  });
-
-  React.useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.theme = "dark";
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.theme = "light";
-    }
-  }, [isDarkMode]);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-gray-800 px-8 py-4 bg-white dark:bg-gray-900/50 shrink-0">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-white/10 px-8 py-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0">
       {title ? (
         <div className="text-gray-900 dark:text-white text-xl font-bold leading-normal">
           {title}
         </div>
       ) : (
         <label className="flex flex-col min-w-40 !h-10 max-w-sm">
-          <div className="flex w-full flex-1 items-stretch rounded-DEFAULT h-full">
-            <div className="text-gray-500 flex border-none bg-gray-50 dark:bg-gray-800 items-center justify-center pl-3 rounded-l-DEFAULT border-r-0">
+          <div className="flex w-full flex-1 items-stretch rounded-xl h-full overflow-hidden border border-gray-200 dark:border-white/10">
+            <div className="text-gray-500 dark:text-gray-400 flex bg-gray-50 dark:bg-white/5 items-center justify-center pl-3">
               <Icon name="search" className="text-base" />
             </div>
             <input
-              className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-DEFAULT text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-50 dark:bg-gray-800 h-full placeholder:text-gray-500 dark:placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal"
+              className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-gray-50 dark:bg-white/5 h-full placeholder:text-gray-500 dark:placeholder:text-gray-400 px-4 pl-2 text-sm font-normal leading-normal"
               placeholder="Buscar tickets, clientes, artículos..."
             />
           </div>
@@ -53,16 +28,14 @@ export const TopBar: React.FC<TopBarProps> = ({ title }) => {
       )}
 
       <div className="flex items-center gap-3">
-        <button className="relative flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full size-10 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors">
+        {/* Notifications Button */}
+        <button className="relative flex items-center justify-center w-10 h-10 rounded-full bg-transparent hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-all duration-200">
           <Icon name="notifications" />
-          <div className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900/50"></div>
+          <div className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></div>
         </button>
-        <button
-          onClick={toggleDarkMode}
-          className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full size-10 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
-        >
-          {isDarkMode ? <Icon name="light_mode" /> : <Icon name="dark_mode" />}
-        </button>
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
       </div>
     </header>
   );

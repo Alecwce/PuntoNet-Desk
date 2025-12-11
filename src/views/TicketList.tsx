@@ -40,11 +40,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
   const fetchTickets = useCallback(async () => {
     try {
       setLoading(true);
-      const params: any = {
-        page,
-        limit: 10,
-      };
-
+      const params: Record<string, unknown> = { page, limit: 10 };
       if (debouncedSearch) params.search = debouncedSearch;
       if (filters.status !== "ALL") params.status = filters.status;
       if (filters.priority !== "ALL") params.priority = filters.priority;
@@ -65,19 +61,13 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
     fetchTickets();
   }, [fetchTickets]);
 
-  // Handlers for creating/updating
-  const handleCreateTicket = async (data: any) => {
+  // Handlers
+  const handleCreateTicket = async (data: Record<string, unknown>) => {
     try {
       const userStr = localStorage.getItem("user");
       const user = userStr ? JSON.parse(userStr) : null;
-      const creatorId = user?.id;
-
-      if (!creatorId) {
-        console.error("No user found in localStorage");
-        return;
-      }
-
-      await api.post("/tickets", { ...data, creatorId });
+      if (!user?.id) return;
+      await api.post("/tickets", { ...data, creatorId: user.id });
       setIsModalOpen(false);
       fetchTickets();
     } catch (error) {
@@ -85,7 +75,10 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
     }
   };
 
-  const handleEditTicket = async (id: string, data: any) => {
+  const handleEditTicket = async (
+    id: string,
+    data: Record<string, unknown>
+  ) => {
     try {
       await api.put(`/tickets/${id}`, data);
       setIsModalOpen(false);
@@ -108,7 +101,6 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
 
   const handleEditClick = (e: React.MouseEvent, ticket: Ticket) => {
     e.stopPropagation();
-    console.log("Edit clicked for ticket:", ticket);
     setTicketToEdit(ticket);
     setIsModalOpen(true);
     setActiveMenuTicketId(null);
@@ -116,13 +108,12 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    console.log("Delete clicked for ticket:", id);
     setTicketToDeleteId(id);
     setIsDeleteModalOpen(true);
     setActiveMenuTicketId(null);
   };
 
-  // Close menu logic
+  // Close menu on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -137,233 +128,311 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [activeMenuTicketId]);
 
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const isAdminOrAgent = user?.role === "ADMIN" || user?.role === "AGENT";
+
   return (
-    <div className="p-8 flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex-1">
-          <label className="flex flex-col min-w-40 !h-10 max-w-sm w-full">
-            <div className="flex w-full flex-1 items-stretch rounded-DEFAULT h-full shadow-sm">
-              <div className="text-gray-500 flex border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 items-center justify-center pl-3 rounded-l-DEFAULT border-r-0">
-                <Icon name="search" />
-              </div>
-              <input
-                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-DEFAULT text-gray-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full placeholder:text-gray-500 dark:placeholder:text-gray-400 px-4 rounded-l-none border-l-0 pl-2 text-sm font-normal leading-normal"
-                placeholder="Buscar por ID, asunto, cliente..."
-                value={filters.search}
-                onChange={(e) => {
-                  setFilters({ ...filters, search: e.target.value });
-                  setPage(1); // Reset page on search
-                }}
-              />
+    <div className="p-6 lg:p-8 flex flex-col gap-6 animate-fade-in">
+      {/* Header with Search and Actions */}
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        {/* Search */}
+        <div className="flex-1 w-full lg:max-w-md">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Icon name="search" className="text-gray-400" />
             </div>
-          </label>
+            <input
+              className="w-full pl-11 pr-4 py-3 rounded-xl transition-all duration-200
+                         bg-white/80 dark:bg-white/5 backdrop-blur-md
+                         border border-gray-200/50 dark:border-white/10
+                         focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20
+                         text-gray-900 dark:text-white placeholder:text-gray-400
+                         text-sm"
+              placeholder="Buscar por ID, asunto, cliente..."
+              value={filters.search}
+              onChange={(e) => {
+                setFilters({ ...filters, search: e.target.value });
+                setPage(1);
+              }}
+            />
+          </div>
         </div>
+
+        {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsExportModalOpen(true)}
-            className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-DEFAULT bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 hover:bg-gray-50 dark:hover:bg-gray-700 shadow-sm transition-colors text-gray-700 dark:text-gray-200"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200
+                       bg-white/80 dark:bg-white/5 backdrop-blur-md
+                       border border-gray-200/50 dark:border-white/10
+                       hover:border-gray-300 dark:hover:border-white/20
+                       text-gray-700 dark:text-gray-200 text-sm font-medium"
           >
-            <Icon
-              name="ios_share"
-              className="text-gray-600 dark:text-gray-300"
-            />
-            <p className="text-sm font-medium leading-normal">Exportar</p>
+            <Icon name="ios_share" className="text-lg" />
+            Exportar
           </button>
           <button
             onClick={() => {
               setTicketToEdit(null);
               setIsModalOpen(true);
             }}
-            className="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-DEFAULT bg-primary px-4 text-white hover:bg-primary/90 shadow-sm transition-colors"
+            className="glass-button flex items-center gap-2"
           >
-            <Icon name="add" />
-            <p className="text-sm font-medium leading-normal">Nuevo Ticket</p>
+            <Icon name="add" className="text-lg" />
+            Nuevo Ticket
           </button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 shadow-sm">
-        <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto">
-          <p className="text-gray-600 dark:text-gray-300 text-sm font-medium whitespace-nowrap">
-            Filtros:
-          </p>
+      {/* Filters Bar */}
+      <div
+        className="flex flex-wrap items-center gap-3 p-4 rounded-xl backdrop-blur-md
+                      bg-white/80 dark:bg-white/5
+                      border border-gray-200/50 dark:border-white/10"
+      >
+        <span className="text-gray-500 dark:text-gray-400 text-sm font-medium flex items-center gap-2">
+          <Icon name="filter_alt" className="text-lg" />
+          Filtros:
+        </span>
 
-          {/* Status Filter */}
-          <div className="relative">
-            <select
-              className="appearance-none h-8 pl-3 pr-8 rounded-DEFAULT bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium focus:ring-primary/50 cursor-pointer"
-              value={filters.status}
-              onChange={(e) => {
-                setFilters({ ...filters, status: e.target.value });
-                setPage(1);
-              }}
-            >
-              <option value="ALL">Todos los estados</option>
-              <option value="OPEN">Abierto</option>
-              <option value="IN_PROGRESS">En Progreso</option>
-              <option value="RESOLVED">Resuelto</option>
-              <option value="CLOSED">Cerrado</option>
-            </select>
-            <Icon
-              name="expand_more"
-              className="text-sm text-gray-500 absolute right-2 top-2 pointer-events-none"
-            />
-          </div>
+        {/* Status Filter */}
+        <select
+          className="px-4 py-2 rounded-xl text-sm font-medium cursor-pointer transition-all
+                     bg-gray-100 dark:bg-white/10
+                     border-0 text-gray-700 dark:text-gray-300
+                     focus:ring-2 focus:ring-blue-500/30"
+          value={filters.status}
+          onChange={(e) => {
+            setFilters({ ...filters, status: e.target.value });
+            setPage(1);
+          }}
+        >
+          <option value="ALL">Todos los estados</option>
+          <option value="OPEN">Abierto</option>
+          <option value="IN_PROGRESS">En Progreso</option>
+          <option value="RESOLVED">Resuelto</option>
+          <option value="CLOSED">Cerrado</option>
+        </select>
 
-          {/* Priority Filter */}
-          <div className="relative">
-            <select
-              className="appearance-none h-8 pl-3 pr-8 rounded-DEFAULT bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-medium focus:ring-primary/50 cursor-pointer"
-              value={filters.priority}
-              onChange={(e) => {
-                setFilters({ ...filters, priority: e.target.value });
-                setPage(1);
-              }}
-            >
-              <option value="ALL">Todas las prioridades</option>
-              <option value="LOW">Baja</option>
-              <option value="MEDIUM">Media</option>
-              <option value="HIGH">Alta</option>
-              <option value="CRITICAL">Crítica</option>
-            </select>
-            <Icon
-              name="expand_more"
-              className="text-sm text-gray-500 absolute right-2 top-2 pointer-events-none"
-            />
-          </div>
-        </div>
+        {/* Priority Filter */}
+        <select
+          className="px-4 py-2 rounded-xl text-sm font-medium cursor-pointer transition-all
+                     bg-gray-100 dark:bg-white/10
+                     border-0 text-gray-700 dark:text-gray-300
+                     focus:ring-2 focus:ring-blue-500/30"
+          value={filters.priority}
+          onChange={(e) => {
+            setFilters({ ...filters, priority: e.target.value });
+            setPage(1);
+          }}
+        >
+          <option value="ALL">Todas las prioridades</option>
+          <option value="LOW">Baja</option>
+          <option value="MEDIUM">Media</option>
+          <option value="HIGH">Alta</option>
+          <option value="CRITICAL">Crítica</option>
+        </select>
+
+        {(filters.status !== "ALL" || filters.priority !== "ALL") && (
+          <button
+            onClick={() =>
+              setFilters({
+                search: filters.search,
+                status: "ALL",
+                priority: "ALL",
+              })
+            }
+            className="text-xs text-blue-500 hover:text-blue-600 flex items-center gap-1"
+          >
+            <Icon name="close" className="text-sm" />
+            Limpiar filtros
+          </button>
+        )}
       </div>
 
+      {/* Table Container */}
       {loading ? (
-        <div className="flex justify-center p-10">
-          <p>Cargando tickets...</p>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">
+            Cargando tickets...
+          </p>
         </div>
       ) : (
-        <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50 shadow-sm relative">
-          <div className="overflow-x-auto min-h-[400px]">
+        <div
+          className="rounded-2xl backdrop-blur-md overflow-hidden
+                        bg-white/80 dark:bg-white/5
+                        border border-gray-200/50 dark:border-white/10"
+        >
+          <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800/50">
-                <tr>
-                  <th className="px-4 py-3 text-left w-12">
-                    <input
-                      className="h-4 w-4 rounded border-gray-300 bg-transparent text-primary focus:ring-primary/50"
-                      type="checkbox"
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    ID Ticket
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    Asunto
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    Creador
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    Prioridad
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    Estado
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    Asignado a
-                  </th>
-                  <th className="px-4 py-3 text-left text-gray-600 dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
-                    Acciones
-                  </th>
+              <thead>
+                <tr className="bg-gray-50/50 dark:bg-white/5">
+                  {[
+                    "ID",
+                    "Asunto",
+                    "Creador",
+                    "Prioridad",
+                    "Estado",
+                    "Asignado",
+                    "",
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {tickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                  >
-                    <td className="px-4 py-3 w-12">
-                      <input
-                        className="h-4 w-4 rounded border-gray-300 bg-transparent text-primary focus:ring-primary/50"
-                        type="checkbox"
+              <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                {tickets.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-16 text-center">
+                      <Icon
+                        name="inbox"
+                        className="text-5xl text-gray-300 dark:text-gray-600 mb-3"
                       />
+                      <p className="text-gray-500 dark:text-gray-400">
+                        No se encontraron tickets
+                      </p>
                     </td>
-                    <td
-                      className="px-4 py-3 text-primary text-sm font-medium cursor-pointer hover:underline"
+                  </tr>
+                ) : (
+                  tickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      className="hover:bg-blue-50/50 dark:hover:bg-white/5 cursor-pointer transition-colors"
                       onClick={() => onTicketSelect(ticket.id)}
                     >
-                      TK-{ticket.id.substring(0, 6).toUpperCase()}
-                    </td>
-                    <td
-                      className="px-4 py-3 text-gray-800 dark:text-gray-100 text-sm font-bold cursor-pointer"
-                      onClick={() => onTicketSelect(ticket.id)}
-                    >
-                      {ticket.subject}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-sm">
-                      {(ticket as any).creator?.name || "Desconocido"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                      <td className="px-6 py-4 text-sm font-mono text-blue-600 dark:text-blue-400">
+                        TK-{ticket.id.substring(0, 6).toUpperCase()}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                        {ticket.subject}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                        {(
+                          ticket as Record<string, unknown> & {
+                            creator?: { name: string };
+                          }
+                        ).creator?.name || "—"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+                          ${
+                            ticket.priority === "CRITICAL"
+                              ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                              : ""
+                          }
+                          ${
+                            ticket.priority === "HIGH"
+                              ? "bg-orange-500/20 text-orange-600 dark:text-orange-400"
+                              : ""
+                          }
+                          ${
+                            ticket.priority === "MEDIUM"
+                              ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400"
+                              : ""
+                          }
+                          ${
+                            ticket.priority === "LOW"
+                              ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                              : ""
+                          }
+                        `}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full
                             ${
-                              ticket.priority === "HIGH" ||
-                              ticket.priority === "CRITICAL"
-                                ? "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200"
-                                : ticket.priority === "MEDIUM"
-                                ? "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200"
-                                : "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200"
-                            }`}
-                      >
-                        {ticket.priority === "LOW"
-                          ? "Baja"
-                          : ticket.priority === "MEDIUM"
-                          ? "Media"
-                          : ticket.priority === "HIGH"
-                          ? "Alta"
-                          : "Crítica"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs">
-                        {ticket.status === "OPEN"
-                          ? "Abierto"
-                          : ticket.status === "IN_PROGRESS"
-                          ? "En Progreso"
-                          : ticket.status === "RESOLVED"
-                          ? "Resuelto"
-                          : "Cerrado"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      {ticket.assignee ? (
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-6 border border-gray-200"
-                            style={{
-                              backgroundImage: `url("${ticket.assignee.avatar}")`,
-                            }}
-                          ></div>
-                          <span className="text-sm text-gray-700 dark:text-gray-200">
-                            {ticket.assignee.name}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">
-                          Sin asignar
+                              ticket.priority === "CRITICAL" ? "bg-red-500" : ""
+                            }
+                            ${ticket.priority === "HIGH" ? "bg-orange-500" : ""}
+                            ${
+                              ticket.priority === "MEDIUM"
+                                ? "bg-yellow-500"
+                                : ""
+                            }
+                            ${ticket.priority === "LOW" ? "bg-green-500" : ""}
+                          `}
+                          />
+                          {ticket.priority === "LOW" && "Baja"}
+                          {ticket.priority === "MEDIUM" && "Media"}
+                          {ticket.priority === "HIGH" && "Alta"}
+                          {ticket.priority === "CRITICAL" && "Crítica"}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 relative">
-                      {(() => {
-                        const userStr = localStorage.getItem("user");
-                        const user = userStr ? JSON.parse(userStr) : null;
-                        const isAdminOrAgent =
-                          user?.role === "ADMIN" || user?.role === "AGENT";
-
-                        if (!isAdminOrAgent) return null;
-
-                        return (
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium
+                          ${
+                            ticket.status === "OPEN"
+                              ? "bg-blue-500/20 text-blue-600 dark:text-blue-400"
+                              : ""
+                          }
+                          ${
+                            ticket.status === "IN_PROGRESS"
+                              ? "bg-purple-500/20 text-purple-600 dark:text-purple-400"
+                              : ""
+                          }
+                          ${
+                            ticket.status === "RESOLVED"
+                              ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                              : ""
+                          }
+                          ${
+                            ticket.status === "CLOSED"
+                              ? "bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                              : ""
+                          }
+                        `}
+                        >
+                          {ticket.status === "OPEN" && "Abierto"}
+                          {ticket.status === "IN_PROGRESS" && "En Progreso"}
+                          {ticket.status === "RESOLVED" && "Resuelto"}
+                          {ticket.status === "CLOSED" && "Cerrado"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {ticket.assignee ? (
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-cyan-400 bg-cover
+                                         border-2 border-white dark:border-slate-800"
+                              style={{
+                                backgroundImage: ticket.assignee.avatar
+                                  ? `url("${ticket.assignee.avatar}")`
+                                  : undefined,
+                              }}
+                            >
+                              {!ticket.assignee.avatar && (
+                                <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">
+                                  {ticket.assignee.name?.charAt(0) || "?"}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-sm text-gray-600 dark:text-gray-300">
+                              {ticket.assignee.name}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">
+                            Sin asignar
+                          </span>
+                        )}
+                      </td>
+                      <td
+                        className="px-6 py-4 relative"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isAdminOrAgent && (
                           <>
                             <button
-                              className="text-gray-400 hover:text-gray-600 dark:hover:text-white action-menu-trigger p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                              className="action-menu-trigger p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white
+                                         hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveMenuTicketId(
@@ -376,61 +445,66 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
                               <Icon name="more_vert" />
                             </button>
                             {activeMenuTicketId === ticket.id && (
-                              <div className="action-menu-content absolute right-0 mt-2 w-36 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
-                                <div className="py-1">
+                              <div
+                                className="action-menu-content absolute right-4 top-12 w-40 rounded-xl overflow-hidden
+                                              bg-white dark:bg-slate-800 shadow-xl
+                                              border border-gray-200 dark:border-white/10 z-50 animate-scale-in"
+                              >
+                                <button
+                                  className="flex items-center w-full px-4 py-3 text-sm text-gray-700 dark:text-gray-200
+                                             hover:bg-gray-50 dark:hover:bg-white/5 gap-2 transition-colors"
+                                  onClick={(e) => handleEditClick(e, ticket)}
+                                >
+                                  <Icon name="edit" className="text-gray-400" />
+                                  Editar
+                                </button>
+                                {user?.role === "ADMIN" && (
                                   <button
-                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 gap-2"
-                                    onClick={(e) => handleEditClick(e, ticket)}
+                                    className="flex items-center w-full px-4 py-3 text-sm text-red-600 dark:text-red-400
+                                               hover:bg-red-50 dark:hover:bg-red-500/10 gap-2 transition-colors"
+                                    onClick={(e) =>
+                                      handleDeleteClick(e, ticket.id)
+                                    }
                                   >
-                                    <Icon
-                                      name="edit"
-                                      className="text-gray-500 text-base"
-                                    />{" "}
-                                    Editar
+                                    <Icon name="delete" />
+                                    Eliminar
                                   </button>
-                                  {user?.role === "ADMIN" && (
-                                    <button
-                                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 gap-2"
-                                      onClick={(e) =>
-                                        handleDeleteClick(e, ticket.id)
-                                      }
-                                    >
-                                      <Icon
-                                        name="delete"
-                                        className="text-base"
-                                      />{" "}
-                                      Eliminar
-                                    </button>
-                                  )}
-                                </div>
+                                )}
                               </div>
                             )}
                           </>
-                        );
-                      })()}
-                    </td>
-                  </tr>
-                ))}
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-          {/* Pagination Controls */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex justify-between items-center">
-            <span className="text-sm text-gray-500">
+
+          {/* Pagination */}
+          <div className="p-4 border-t border-gray-200/50 dark:border-white/10 flex justify-between items-center">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
               Página {page} de {totalPages}
             </span>
             <div className="flex gap-2">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-all
+                           bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300
+                           hover:bg-gray-200 dark:hover:bg-white/20
+                           disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Anterior
               </button>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1 rounded border hover:bg-gray-50 disabled:opacity-50"
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-all
+                           bg-gray-100 dark:bg-white/10 text-gray-700 dark:text-gray-300
+                           hover:bg-gray-200 dark:hover:bg-white/20
+                           disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Siguiente
               </button>
@@ -439,6 +513,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
         </div>
       )}
 
+      {/* Modals */}
       <CreateTicketModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -446,13 +521,11 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
         onEdit={handleEditTicket}
         ticketToEdit={ticketToEdit}
       />
-
       <ExportTicketsModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
         tickets={tickets}
       />
-
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

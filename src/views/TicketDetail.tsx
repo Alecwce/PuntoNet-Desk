@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "../components/Icon";
-import { Ticket, ChatMessage } from "../types";
+import { Ticket } from "../types";
 import api from "../lib/api";
 
 interface TicketDetailProps {
@@ -18,7 +18,6 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch ticket data
   const fetchTicket = async () => {
     try {
       const response = await api.get(`/tickets/${ticketId}`);
@@ -34,13 +33,8 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
     fetchTicket();
   }, [ticketId]);
 
-  // Scroll to bottom of chat
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [ticket?.messages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -50,19 +44,14 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
     try {
       const userStr = localStorage.getItem("user");
       const user = userStr ? JSON.parse(userStr) : null;
-      const senderId = user?.id;
-
-      if (!senderId) {
-        console.error("User not logged in");
-        return;
-      }
+      if (!user?.id) return;
 
       await api.post(`/tickets/${ticket.id}/messages`, {
         content: newMessage,
-        senderId,
+        senderId: user.id,
       });
       setNewMessage("");
-      fetchTicket(); // Refresh to show new message
+      fetchTicket();
     } catch (error) {
       console.error("Error sending message:", error);
     }
@@ -88,6 +77,26 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0] && ticket) {
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+      if (!user?.id) return;
+
+      const formData = new FormData();
+      formData.append("file", e.target.files[0]);
+      formData.append("uploaderId", user.id);
+      try {
+        await api.post(`/tickets/${ticketId}/attachments`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        fetchTicket();
+      } catch (error) {
+        console.error("Error uploading:", error);
+      }
+    }
+  };
+
   if (loading)
     return (
       <div className="p-8 flex justify-center text-gray-500">
@@ -101,53 +110,64 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
       </div>
     );
 
+  const userStr = localStorage.getItem("user");
+  const currentUser = userStr ? JSON.parse(userStr) : null;
+
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-background-dark">
+    <div className="flex flex-col h-full animate-fade-in bg-gray-50/50 dark:bg-black/20">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
+      <div className="backdrop-blur-md bg-white/80 dark:bg-white/5 border-b border-gray-200/50 dark:border-white/10 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0 transition-all">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full text-gray-500 dark:text-gray-400 transition-colors"
           >
             <Icon name="arrow_back" />
           </button>
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                #{ticket.id.substring(0, 8)}
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white font-mono">
+                TK-{ticket.id.substring(0, 6).toUpperCase()}
               </h1>
               <span
-                className={`px-2.5 py-0.5 rounded-full text-xs font-medium 
+                className={`px-2.5 py-1 rounded-full text-xs font-medium border border-transparent
                 ${
                   ticket.status === "OPEN"
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200"
-                    : ticket.status === "IN_PROGRESS"
-                    ? "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-200"
-                    : "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200"
-                }`}
+                    ? "bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                    : ""
+                }
+                ${
+                  ticket.status === "IN_PROGRESS"
+                    ? "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/20"
+                    : ""
+                }
+                ${
+                  ticket.status === "RESOLVED"
+                    ? "bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/20"
+                    : ""
+                }
+                ${
+                  ticket.status === "CLOSED"
+                    ? "bg-gray-500/20 text-gray-600 dark:text-gray-400 border-gray-500/20"
+                    : ""
+                }
+              `}
               >
-                {ticket.status === "OPEN"
-                  ? "Abierto"
-                  : ticket.status === "IN_PROGRESS"
-                  ? "En Progreso"
-                  : ticket.status === "RESOLVED"
-                  ? "Resuelto"
-                  : ticket.status === "CLOSED"
-                  ? "Cerrado"
-                  : ticket.status}
+                {ticket.status === "OPEN" && "Abierto"}
+                {ticket.status === "IN_PROGRESS" && "En Progreso"}
+                {ticket.status === "RESOLVED" && "Resuelto"}
+                {ticket.status === "CLOSED" && "Cerrado"}
               </span>
             </div>
-            <h2 className="text-sm text-gray-600 dark:text-gray-300">
+            <h2 className="text-sm text-gray-600 dark:text-gray-300 font-medium truncate max-w-md">
               {ticket.subject}
             </h2>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Status Selector */}
+        <div className="flex flex-wrap items-center gap-3">
           <select
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+            className="glass-input !py-1.5 !text-sm !w-auto"
             value={ticket.status}
             onChange={(e) => handleStatusChange(e.target.value)}
           >
@@ -157,9 +177,8 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
             <option value="CLOSED">Cerrado</option>
           </select>
 
-          {/* Priority Selector */}
           <select
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
+            className="glass-input !py-1.5 !text-sm !w-auto"
             value={ticket.priority}
             onChange={(e) => handlePriorityChange(e.target.value)}
           >
@@ -171,198 +190,191 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden p-4 lg:p-6 gap-6">
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 mx-4 my-4 rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="flex-1 flex flex-col min-w-0 rounded-2xl glass-panel overflow-hidden border border-gray-200/50 dark:border-white/10 shadow-lg">
           {/* Tabs */}
-          <div className="border-b border-gray-200 dark:border-gray-800">
-            <nav className="-mb-px flex px-4 gap-4" aria-label="Tabs">
-              {["details", "activity", "attachments", "kb", "history"].map(
-                (tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`
-                      whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
-                      ${
-                        activeTab === tab
-                          ? "border-primary text-primary"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-                      }
-                    `}
-                  >
-                    {tab === "details"
-                      ? "Detalles"
-                      : tab === "activity"
-                      ? "Actividad/Chat"
-                      : tab === "attachments"
-                      ? "Adjuntos"
-                      : tab === "kb"
-                      ? "Base de Conocimiento"
-                      : "Historial"}
-                  </button>
-                )
-              )}
+          <div className="border-b border-gray-200/50 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+            <nav
+              className="flex px-4 gap-1 overflow-x-auto scrollbar-hide"
+              aria-label="Tabs"
+            >
+              {[
+                { id: "activity", label: "Actividad", icon: "forum" },
+                { id: "details", label: "Detalles", icon: "info" },
+                { id: "attachments", label: "Adjuntos", icon: "attach_file" },
+                { id: "kb", label: "Base de Conocimiento", icon: "menu_book" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    flex items-center gap-2 py-4 px-4 border-b-2 font-medium text-sm transition-all whitespace-nowrap
+                    ${
+                      activeTab === tab.id
+                        ? "border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-white/5"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50/50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-white/5"
+                    }
+                  `}
+                >
+                  <Icon name={tab.icon} className="text-lg" />
+                  {tab.label}
+                </button>
+              ))}
             </nav>
           </div>
 
           {/* Tab Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto bg-white/50 dark:bg-slate-900/50">
             {activeTab === "details" && (
-              <div className="prose dark:prose-invert max-w-none">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  Descripción
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                  {(ticket as any).description || "Sin descripción"}
-                </p>
-
-                <div className="mt-6 grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Cliente
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {(ticket as any).creator?.name || "Desconocido"}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                      Email
-                    </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {(ticket as any).creator?.email || "N/A"}
-                    </p>
+              <div className="p-8 max-w-3xl mx-auto animate-fade-in-up">
+                <div className="prose dark:prose-invert max-w-none">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <Icon name="description" className="text-blue-500" />
+                    Descripción del Problema
+                  </h3>
+                  <div className="p-6 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 shadow-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    {(ticket as any).description || "Sin descripción"}
                   </div>
                 </div>
               </div>
             )}
 
             {activeTab === "activity" && (
-              <div className="flex flex-col h-full">
-                <div className="flex-1 space-y-4 mb-4">
+              <div className="flex flex-col h-full animate-fade-in">
+                <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                   {ticket.messages && ticket.messages.length > 0 ? (
-                    ticket.messages.map((msg: any) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.senderId === "current-user-id"
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
+                    ticket.messages.map((msg: any) => {
+                      const isCurrentUser = msg.senderId === currentUser?.id;
+                      return (
                         <div
-                          className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                            msg.senderId === "current-user-id"
-                              ? "bg-primary text-white"
-                              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
-                          }`}
+                          key={msg.id}
+                          className={`flex ${
+                            isCurrentUser ? "justify-end" : "justify-start"
+                          } animate-scale-in`}
                         >
-                          <p className="text-sm">{msg.content}</p>
-                          <span className="text-xs opacity-70 mt-1 block">
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
+                          <div
+                            className={`flex max-w-[80%] gap-3 ${
+                              isCurrentUser ? "flex-row-reverse" : ""
+                            }`}
+                          >
+                            <div
+                              className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white
+                               ${
+                                 isCurrentUser
+                                   ? "bg-gradient-to-br from-blue-500 to-cyan-500"
+                                   : "bg-gradient-to-br from-gray-500 to-gray-600"
+                               }`}
+                            >
+                              {isCurrentUser ? "Yo" : "U"}
+                            </div>
+                            <div
+                              className={`rounded-2xl px-5 py-3 shadow-md
+                               ${
+                                 isCurrentUser
+                                   ? "bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-tr-none"
+                                   : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-white/10 rounded-tl-none"
+                               }`}
+                            >
+                              <p className="text-sm leading-relaxed">
+                                {msg.content}
+                              </p>
+                              <span
+                                className={`text-[10px] block mt-1 ${
+                                  isCurrentUser
+                                    ? "text-blue-200"
+                                    : "text-gray-400"
+                                }`}
+                              >
+                                {new Date(msg.createdAt).toLocaleTimeString(
+                                  [],
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
-                    <p className="text-center text-gray-400 text-sm py-10">
-                      No hay mensajes aún.
-                    </p>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                      <Icon name="forum" className="text-4xl mb-2 opacity-50" />
+                      <p>No hay mensajes aún. ¡Inicia la conversación!</p>
+                    </div>
                   )}
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form
-                  onSubmit={handleSendMessage}
-                  className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800"
-                >
-                  <div className="flex gap-2">
+                <div className="p-4 border-t border-gray-200/50 dark:border-white/10 bg-white/80 dark:bg-white/5 backdrop-blur-md">
+                  <form
+                    onSubmit={handleSendMessage}
+                    className="flex gap-3 max-w-4xl mx-auto"
+                  >
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       placeholder="Escribe un mensaje..."
-                      className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                      className="flex-1 rounded-xl border border-gray-200 dark:border-white/10
+                                 bg-white/50 dark:bg-white/5 px-4 py-3 text-sm
+                                 focus:ring-2 focus:ring-blue-500/50 focus:border-transparent
+                                 placeholder:text-gray-400 dark:text-white transition-all"
                     />
                     <button
                       type="submit"
                       disabled={!newMessage.trim()}
-                      className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl
+                                 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-blue-500/30 font-medium"
                     >
-                      <Icon name="send" className="text-xl" />
+                      <Icon name="send" />
                     </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               </div>
             )}
 
             {activeTab === "attachments" && (
-              <div className="p-4">
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    Subir archivo
+              <div className="p-8 max-w-3xl mx-auto animate-fade-in-up">
+                <div className="mb-8 p-6 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors bg-gray-50/50 dark:bg-white/5 text-center">
+                  <Icon
+                    name="cloud_upload"
+                    className="text-4xl text-gray-400 mb-2"
+                  />
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                    Subir nuevo archivo
                   </h4>
-                  <div className="flex gap-2">
-                    <input
-                      type="file"
-                      id="file-upload"
-                      className="block w-full text-sm text-gray-500
-                                  file:mr-4 file:py-2 file:px-4
-                                  file:rounded-full file:border-0
-                                  file:text-sm file:font-semibold
-                                  file:bg-primary file:text-white
-                                  hover:file:bg-primary/90"
-                      onChange={async (e) => {
-                        if (e.target.files?.[0]) {
-                          const userStr = localStorage.getItem("user");
-                          const user = userStr ? JSON.parse(userStr) : null;
-                          const uploaderId = user?.id;
-
-                          if (!uploaderId) {
-                            console.error("User not found");
-                            return;
-                          }
-
-                          const formData = new FormData();
-                          formData.append("file", e.target.files[0]);
-                          formData.append("uploaderId", uploaderId);
-                          try {
-                            await api.post(
-                              `/tickets/${ticketId}/attachments`,
-                              formData,
-                              {
-                                headers: {
-                                  "Content-Type": "multipart/form-data",
-                                },
-                              }
-                            );
-                            fetchTicket(); // Refresh list
-                          } catch (error) {
-                            console.error("Error uploading:", error);
-                          }
-                        }
-                      }}
-                    />
-                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+                    Arrastra y suelta o haz clic para seleccionar
+                  </p>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Seleccionar archivo
+                  </label>
                 </div>
 
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                  Archivos Adjuntos
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wider flex items-center gap-2">
+                  <Icon name="folder_open" className="text-gray-400" /> Archivos
+                  Adjuntos
                 </h4>
-                {(ticket as any).attachments &&
-                (ticket as any).attachments.length > 0 ? (
-                  <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {(ticket as any).attachments?.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
                     {(ticket as any).attachments.map((att: any) => (
-                      <li
+                      <div
                         key={att.id}
-                        className="py-3 flex justify-between items-center"
+                        className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:shadow-md transition-all"
                       >
-                        <div className="flex items-center gap-3">
-                          <Icon name="description" className="text-gray-400" />
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <Icon name="description" />
+                          </div>
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
                               {att.filename}
@@ -382,132 +394,96 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
                           }
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-primary hover:text-primary/80 text-sm font-medium"
+                          className="px-3 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         >
                           Descargar
                         </a>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 ) : (
-                  <p className="text-gray-500 text-sm">
-                    No hay archivos adjuntos.
+                  <p className="text-center text-gray-500 py-8 italic">
+                    No hay archivos adjuntos en este ticket.
                   </p>
                 )}
               </div>
             )}
 
             {activeTab === "kb" && (
-              <div className="p-4 space-y-6">
-                <div className="relative">
-                  <Icon
-                    name="search"
-                    className="absolute left-3 top-2.5 text-gray-400"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Buscar soluciones en la base de conocimiento..."
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Icon name="lightbulb" className="text-yellow-500" />
-                    Artículos Sugeridos
-                  </h4>
-                  <div className="space-y-3">
-                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
-                      <h5 className="text-primary font-medium text-sm group-hover:underline">
-                        Solución de problemas de VPN
-                      </h5>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                        Guía completa para diagnosticar y resolver errores
-                        comunes al conectar con la VPN corporativa (Error 619,
-                        800, etc).
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] text-gray-600 dark:text-gray-400">
-                          Redes
-                        </span>
-                        <span className="text-[10px] text-gray-400">
-                          • Actualizado hace 2 días
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group">
-                      <h5 className="text-primary font-medium text-sm group-hover:underline">
-                        Restablecimiento de Contraseñas del Portal
-                      </h5>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
-                        Pasos para restablecer contraseñas de usuarios
-                        bloqueados en el portal de servicios.
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] text-gray-600 dark:text-gray-400">
-                          Acceso
-                        </span>
-                      </div>
-                    </div>
+              <div className="p-8 max-w-4xl mx-auto space-y-8 animate-fade-in-up">
+                {/* KB Content Placeholder - similar to design */}
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Icon name="lightbulb" className="text-3xl text-blue-500" />
                   </div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Artículos Sugeridos
+                  </h3>
+                  <p className="text-gray-500 mt-2 max-w-sm mx-auto">
+                    La IA sugerirá artículos relevantes basados en el contenido
+                    de este ticket.
+                  </p>
                 </div>
-              </div>
-            )}
-
-            {activeTab === "history" && (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                <Icon
-                  name="history"
-                  className="text-5xl mb-4 mx-auto opacity-30 text-gray-400 dark:text-gray-600"
-                />
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                  Historial de Cambios
-                </h4>
-                <p className="text-sm max-w-sm mx-auto">
-                  Próximamente podrás ver aquí un registro detallado de todos
-                  los cambios de estado, asignaciones y notas internas del
-                  ticket.
-                </p>
               </div>
             )}
           </div>
         </div>
 
         {/* Sidebar Info */}
-        <div className="w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 p-6 overflow-y-auto hidden xl:block">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4 uppercase tracking-wider">
-            Información del Ticket
-          </h3>
-          <div className="space-y-6">
+        <div className="w-80 hidden xl:flex flex-col gap-6">
+          <div className="glass-panel p-6 rounded-2xl border border-gray-200/50 dark:border-white/10 space-y-6">
+            <h3 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-100 dark:border-white/10 pb-2">
+              Información
+            </h3>
+
             <div>
-              <span className="text-xs font-medium text-gray-500 uppercase">
+              <span className="text-xs text-gray-500 font-medium">
                 Asignado a
               </span>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs">
+              <div className="mt-2 flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-xs text-white font-bold border-2 border-white dark:border-slate-800 shadow-sm">
                   {(ticket.assignee as any)?.name?.charAt(0) || "?"}
                 </div>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">
                   {(ticket.assignee as any)?.name || "Sin asignar"}
                 </span>
               </div>
             </div>
+
             <div>
-              <span className="text-xs font-medium text-gray-500 uppercase">
-                Creado
-              </span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {new Date((ticket as any).createdAt).toLocaleDateString()}
-              </p>
+              <span className="text-xs text-gray-500 font-medium">Cliente</span>
+              <div className="mt-2 flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-xs text-white font-bold border-2 border-white dark:border-slate-800 shadow-sm">
+                  {(ticket as any).creator?.name?.charAt(0) || "C"}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {(ticket as any).creator?.name || "Desconocido"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {(ticket as any).creator?.email}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <span className="text-xs font-medium text-gray-500 uppercase">
-                Última actualización
-              </span>
-              <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                {new Date((ticket as any).updatedAt).toLocaleDateString()}
-              </p>
+
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div>
+                <span className="text-xs text-gray-500 font-medium block mb-1">
+                  Creado
+                </span>
+                <p className="text-sm font-mono text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md inline-block">
+                  {new Date((ticket as any).createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500 font-medium block mb-1">
+                  Actualizado
+                </span>
+                <p className="text-sm font-mono text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 px-2 py-1 rounded-md inline-block">
+                  {new Date((ticket as any).updatedAt).toLocaleDateString()}
+                </p>
+              </div>
             </div>
           </div>
         </div>

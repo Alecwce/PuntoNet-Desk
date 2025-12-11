@@ -5,6 +5,7 @@ import {
   getTicketsByPriority,
   getTicketsTimeline,
   getTopAgents,
+  getDashboardSummary,
 } from "../controllers/reports.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 
@@ -28,5 +29,8 @@ router.get("/tickets-timeline", getTicketsTimeline);
 
 // Get top performing agents
 router.get("/top-agents", getTopAgents);
+
+// Get consolidated dashboard summary
+router.get("/dashboard-summary", getDashboardSummary);
 
 export default router;

@@ -3,6 +3,10 @@ import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { Login } from "./views/Login";
 import { TwoFactor } from "./views/TwoFactor";
+import { Login } from "./views/Login";
+import { TwoFactor } from "./views/TwoFactor";
+import { ForgotPassword } from "./views/ForgotPassword";
+import { ResetPassword } from "./views/ResetPassword";
 import { Dashboard } from "./views/Dashboard";
 import { TicketList } from "./views/TicketList";
 import { TicketDetail } from "./views/TicketDetail";
@@ -22,6 +26,12 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Check for reset password URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("token")) {
+      setCurrentView("reset-password");
+    }
+
     if (currentView === "dashboard" || currentView === "tickets") {
       fetchTickets();
     }
@@ -70,7 +80,12 @@ function App() {
 
   // Render logic based on state
   if (currentView === "login") {
-    return <Login onLogin={handleLogin} />;
+    return (
+      <Login
+        onLogin={handleLogin}
+        onForgotPassword={() => setCurrentView("forgot-password")}
+      />
+    );
   }
 
   if (currentView === "2fa") {
