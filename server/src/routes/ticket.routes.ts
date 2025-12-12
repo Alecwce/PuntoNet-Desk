@@ -7,7 +7,8 @@ import {
   deleteTicket,
   addMessage,
 } from "../controllers/ticket.controller";
-import { upload, uploadAttachment } from "../controllers/attachment.controller";
+import { uploadAttachment } from "../controllers/attachment.controller";
+import { upload } from "../middleware/upload.middleware";
 
 const router = Router();
 
