@@ -16,40 +16,54 @@ import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
 import kbRoutes from "./routes/kb.routes";
 import userRoutes from "./routes/user.routes";
-import clientRoutes from "./routes/client.routes";
-import reportsRoutes from "./routes/reports.routes";
-
 app.disable("x-powered-by");
 
-// CORS Configuration (Must be first)
+// Debug Middleware for CORS
+app.use((req, res, next) => {
+  console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
+  next();
+});
+
+// CORS Configuration - ROBUST & CRITICAL
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.CORS_ORIGIN,
-  "http://localhost:5173",
-  "https://punto-net-desk.vercel.app", // Fallback
-];
+  "https://punto-net-desk.vercel.app", // Production Vercel (Current)
+  "https://puntonet-desk.vercel.app", // Production Vercel (Alternative)
+  "http://localhost:5173", // Local Frontend
+  "http://localhost:3000", // Local Alt
+  process.env.FRONTEND_URL, // Env Variable
+  process.env.CORS_ORIGIN, // Env Variable
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
+      // Allow requests with no origin (mobile apps, curl, postman)
       if (!origin) return callback(null, true);
 
-      // Check if origin is allowed or is a vercel subdomain
-      if (
-        allowedOrigins.includes(origin) ||
-        allowedOrigins.some((o) => o && origin.startsWith(o)) ||
-        origin.endsWith(".vercel.app")
-      ) {
+      // Check if origin is allowed or matches wildcard pattern
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (!allowed) return false;
+        if (allowed.includes("*")) {
+          // Handle wildcards if present in list (e.g. *.vercel.app)
+          const pattern = allowed.replace("*.", "");
+          return origin.endsWith(pattern);
+        }
+        return origin === allowed || origin.endsWith(".vercel.app"); // Explicit vercel subdomain support
+      });
+
+      if (isAllowed) {
         callback(null, true);
       } else {
-        console.warn(`Blocked by CORS: ${origin}`);
+        console.warn(`🚫 CORS blocked origin: ${origin}`);
         callback(null, false);
+        // callback(new Error("Not allowed by CORS")); // Don't crash, just block
       }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Content-Range", "X-Content-Range"],
+    maxAge: 86400, // 24 hours
   })
 );
 
@@ -71,8 +85,20 @@ app.use("/api/clients", clientRoutes);
 app.use("/api/reports", reportsRoutes);
 
 // Basic health check
+app.get("/health", (req, res) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date(),
+    cors_origins: allowedOrigins,
+  });
+});
+// Maintain compatibility with /api/health as well
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date() });
+  res.json({
+    status: "healthy",
+    timestamp: new Date(),
+    cors_origins: allowedOrigins,
+  });
 });
 
 // Start server
