@@ -10,6 +10,9 @@ import csurf from "csurf";
 dotenv.config();
 
 const app = express();
+// Enable trust proxy for Vercel/Railway
+app.set("trust proxy", 1);
+
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 

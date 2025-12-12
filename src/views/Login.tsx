@@ -324,7 +324,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <h2 className="text-2xl font-bold text-white text-center mb-1">
             Acceso a PuntoNet
           </h2>
-          <p className="text-gray-400 text-sm text-center mb-6">Service Desk</p>
+          <p className="text-gray-400 text-sm text-center mb-6">
+            Service Desk v2.5 (Fully Loaded)
+          </p>
 
           {/* Error message */}
           {error && (
