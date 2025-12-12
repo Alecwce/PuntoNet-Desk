@@ -185,7 +185,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
                     <td className="p-4">
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
-                          {ticket.title}
+                          {ticket.subject}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">
                           {ticket.description}

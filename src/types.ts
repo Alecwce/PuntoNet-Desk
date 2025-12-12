@@ -8,7 +8,9 @@ export interface User {
 
 export interface Ticket {
   id: string;
-  title: string; // Used in frontend components
+export interface Ticket {
+  id: string;
+  subject: string; // Matches backend property
   description: string;
   category?: string;
   client?: {
