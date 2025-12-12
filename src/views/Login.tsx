@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/Icon";
 import api from "@/lib/api";
 import { AxiosError } from "axios";
-import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
-export const Login: React.FC = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
+interface LoginProps {
+  onLogin: () => void;
+}
+
+export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -52,8 +52,8 @@ export const Login: React.FC = () => {
       }
 
       // No 2FA - proceed with login
-      login(response.data.user);
-      navigate("/dashboard");
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      onLogin();
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
       console.error("Login error:", error);
@@ -120,8 +120,8 @@ export const Login: React.FC = () => {
         { headers: { "x-2fa-token": tempToken } }
       );
 
-      login(response.data.user);
-      navigate("/dashboard");
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      onLogin();
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
       console.error("2FA error:", error);
