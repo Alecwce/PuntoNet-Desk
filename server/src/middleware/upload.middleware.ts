@@ -1,6 +1,8 @@
 import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../services/cloudinary.service";
+
+// Workaround for TypeScript/CommonJS mismatch with this specific library version
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 // Storage directo a Cloudinary (NO diskStorage)
 const storage = new CloudinaryStorage({
@@ -21,7 +23,7 @@ const storage = new CloudinaryStorage({
     ],
     resource_type: "auto",
     transformation: [{ quality: "auto" }],
-  } as any,
+  },
 });
 
 // Validación de archivos
