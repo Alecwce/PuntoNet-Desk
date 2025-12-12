@@ -19,13 +19,15 @@ import userRoutes from "./routes/user.routes";
 import clientRoutes from "./routes/client.routes";
 import reportsRoutes from "./routes/reports.routes";
 
-app.use(helmet());
-app.use(cookieParser());
+app.disable("x-powered-by");
+
+// CORS Configuration (Must be first)
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.CORS_ORIGIN,
   "http://localhost:5173",
-].filter(Boolean);
+  "https://punto-net-desk.vercel.app", // Fallback
+];
 
 app.use(
   cors({
@@ -33,16 +35,29 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      // Check if origin is allowed or is a vercel subdomain
+      if (
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.some((o) => o && origin.startsWith(o)) ||
+        origin.endsWith(".vercel.app")
+      ) {
         callback(null, true);
       } else {
         console.warn(`Blocked by CORS: ${origin}`);
-        callback(new Error("Not allowed by CORS"));
+        callback(null, false);
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   })
 );
+
+// Handle preflight requests
+app.options("*", cors());
+
+app.use(helmet());
+app.use(cookieParser());
 app.use(express.json());
 
 // Serve static files from uploads directory
