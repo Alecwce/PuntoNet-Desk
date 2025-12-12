@@ -56,9 +56,11 @@ function App() {
   };
 
   // Navigation Handlers
-  const handleNavigate = (view: ViewState) => {
+  const handleNavigate = (view: ViewState, id?: string) => {
     setCurrentView(view);
-    if (view !== "ticket-detail") {
+    if (view === "ticket-detail" && id) {
+      setSelectedTicketId(id);
+    } else if (view !== "ticket-detail") {
       setSelectedTicketId(null);
     }
   };
@@ -87,6 +89,7 @@ function App() {
 
       <div className="flex flex-1 flex-col overflow-hidden relative">
         <TopBar
+          onNavigate={handleNavigate}
           title={
             currentView === "ticket-detail"
               ? undefined
