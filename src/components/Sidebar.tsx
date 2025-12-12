@@ -1,7 +1,7 @@
 import React from "react";
 import { Icon } from "./Icon";
 import { ViewState } from "../types";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 interface SidebarProps {

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { MainLayout } from "./layouts/MainLayout";
 import { Login } from "./views/Login";
@@ -9,35 +9,26 @@ import { Settings } from "./views/Settings";
 import { useAuth } from "./context/AuthContext";
 import { fetchCsrfToken } from "./lib/api";
 
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+  return <>{children}</>;
 };
 
 function App() {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    const init = async () => {
-      await fetchCsrfToken();
-    };
-    init();
+    fetchCsrfToken().catch(console.error);
   }, []);
 
   return (
     <Routes>
       <Route
         path="/login"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" />
-          ) : (
-            <Login onLogin={() => {}} />
-          )
-        }
+        element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
       />
 
       <Route
@@ -49,11 +40,9 @@ function App() {
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard onNavigate={() => {}} />} />
-        <Route path="tickets" element={<TicketList onNavigate={() => {}} />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="tickets" element={<TicketList />} />
         <Route path="tickets/:id" element={<TicketDetailContainer />} />
-
-        {/* Placeholders for views that might be refactored or are simple components */}
         <Route
           path="kb"
           element={

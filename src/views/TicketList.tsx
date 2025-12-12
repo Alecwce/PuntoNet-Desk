@@ -5,12 +5,14 @@ import { ExportTicketsModal } from "../components/ExportTicketsModal";
 import { DeleteConfirmationModal } from "../components/DeleteConfirmationModal";
 import { Ticket, PaginatedResponse } from "../types";
 import api from "../lib/api";
+import { useNavigate } from "react-router-dom";
 
 interface TicketListProps {
-  onTicketSelect: (id: string) => void;
+  onNavigate?: any; // Deprecated but kept for compatibility
 }
 
-export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
+export const TicketList: React.FC<TicketListProps> = () => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -52,10 +54,11 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
       const response = await api.get<PaginatedResponse<Ticket>>("/tickets", {
         params,
       });
-      setTickets(response.data.data);
-      setTotalPages(response.data.meta.totalPages);
+      setTickets(response.data.data || []);
+      setTotalPages(response.data.meta?.totalPages || 1);
     } catch (error) {
       console.error("Error fetching tickets:", error);
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -108,7 +111,6 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
 
   const handleEditClick = (e: React.MouseEvent, ticket: Ticket) => {
     e.stopPropagation();
-    console.log("Edit clicked for ticket:", ticket);
     setTicketToEdit(ticket);
     setIsModalOpen(true);
     setActiveMenuTicketId(null);
@@ -116,7 +118,6 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
 
   const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    console.log("Delete clicked for ticket:", id);
     setTicketToDeleteId(id);
     setIsDeleteModalOpen(true);
     setActiveMenuTicketId(null);
@@ -152,7 +153,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
                 value={filters.search}
                 onChange={(e) => {
                   setFilters({ ...filters, search: e.target.value });
-                  setPage(1); // Reset page on search
+                  setPage(1);
                 }}
               />
             </div>
@@ -274,7 +275,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                {tickets.map((ticket) => (
+                {(tickets || []).map((ticket) => (
                   <tr
                     key={ticket.id}
                     className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
@@ -287,13 +288,13 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
                     </td>
                     <td
                       className="px-4 py-3 text-primary text-sm font-medium cursor-pointer hover:underline"
-                      onClick={() => onTicketSelect(ticket.id)}
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
                     >
                       TK-{ticket.id.substring(0, 6).toUpperCase()}
                     </td>
                     <td
                       className="px-4 py-3 text-gray-800 dark:text-gray-100 text-sm font-bold cursor-pointer"
-                      onClick={() => onTicketSelect(ticket.id)}
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
                     >
                       {ticket.subject}
                     </td>

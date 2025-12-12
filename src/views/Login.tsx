@@ -5,11 +5,7 @@ import { AxiosError } from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-interface LoginProps {
-  onLogin: () => void; // Kept for interface compat but unused
-}
-
-export const Login: React.FC<LoginProps> = () => {
+export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");

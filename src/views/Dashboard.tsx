@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Icon } from "../components/Icon";
-import { Ticket, ViewState } from "../types";
+import { Ticket } from "../types";
 import api from "../lib/api";
 import { CreateTicketModal } from "../components/CreateTicketModal";
 import { CreateClientModal } from "../components/CreateClientModal";
+import { useNavigate } from "react-router-dom";
 
 import {
   AreaChart,
@@ -15,22 +16,29 @@ import {
 } from "recharts";
 
 interface DashboardProps {
-  tickets: Ticket[];
-  onTicketSelect: (ticketId: string) => void;
-  onViewAll: () => void;
-  onNavigate: (view: ViewState) => void;
-  onRefresh: () => void;
+  onNavigate?: any; // Deprecated, kept for interface compat for now
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({
-  tickets,
-  onTicketSelect,
-  onViewAll,
-  onNavigate,
-  onRefresh,
-}) => {
+export const Dashboard: React.FC<DashboardProps> = () => {
+  const navigate = useNavigate();
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [showCreateTicket, setShowCreateTicket] = useState(false);
   const [showCreateClient, setShowCreateClient] = useState(false);
+
+  const fetchTickets = async () => {
+    try {
+      const response = await api.get("/tickets?limit=5");
+      const data = response.data?.data || response.data || [];
+      setTickets(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      setTickets([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
 
   const recentTickets = Array.isArray(tickets) ? tickets.slice(0, 5) : [];
 
@@ -63,7 +71,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Hola, {user.name.split(" ")[0]} 👋
+            Hola, {user.name?.split(" ")[0] || "Usuario"} 👋
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1 capitalize">
             {today}
@@ -95,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
           <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
             {
-              tickets.filter(
+              (tickets || []).filter(
                 (t) => t.status === "OPEN" || t.status === "IN_PROGRESS"
               ).length
             }
@@ -116,7 +124,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
           <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
             {
-              tickets.filter(
+              (tickets || []).filter(
                 (t) => t.priority === "CRITICAL" || t.priority === "HIGH"
               ).length
             }
@@ -137,7 +145,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </p>
           <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
             {
-              tickets.filter(
+              (tickets || []).filter(
                 (t) => t.status === "RESOLVED" || t.status === "CLOSED"
               ).length
             }
@@ -148,7 +156,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
         </div>
 
-        {/* KPI 4: Satisfacción (Mock por ahora, requiere backend feedback) */}
+        {/* KPI 4: Satisfacción */}
         <div className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Icon
@@ -272,7 +280,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="text-xs font-medium">Crear Ticket</span>
               </button>
               <button
-                onClick={onViewAll}
+                onClick={() => navigate("/tickets")}
                 className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group"
               >
                 <Icon
@@ -292,7 +300,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <span className="text-xs font-medium">Nuevo Cliente</span>
               </button>
               <button
-                onClick={() => onNavigate("settings")}
+                onClick={() => navigate("/settings")}
                 className="p-3 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-primary/10 hover:text-primary dark:hover:text-primary transition-colors flex flex-col items-center gap-2 group"
               >
                 <Icon
@@ -313,7 +321,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             Tickets Recientes
           </h2>
           <button
-            onClick={onViewAll}
+            onClick={() => navigate("/tickets")}
             className="text-primary text-sm font-semibold hover:underline"
           >
             Ver todos los tickets
@@ -344,7 +352,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {recentTickets.map((ticket) => (
                 <tr
                   key={ticket.id}
-                  onClick={() => onTicketSelect(ticket.id)}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
                 >
                   <td className="px-6 py-4 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -393,12 +401,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         style={{
                           backgroundImage: `url("${
                             ticket.assignee?.avatar ||
-                            "https://ui-avatars.com/api/?name=U"
+                            "https://ui-avatars.com/api/?name=" +
+                              (ticket.assignee?.name || "U")
                           }")`,
                         }}
                       ></div>
                       <span className="text-sm text-gray-600 dark:text-gray-300">
-                        {ticket.assignee?.name || "Unassigned"}
+                        {ticket.assignee?.name || "Sin asignar"}
                       </span>
                     </div>
                   </td>
@@ -423,7 +432,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 creatorId: user.id,
                 status: "OPEN",
               });
-              onRefresh();
+              fetchTickets();
               setShowCreateTicket(false);
             }
           } catch (error) {
@@ -435,7 +444,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <CreateClientModal
         isOpen={showCreateClient}
         onClose={() => setShowCreateClient(false)}
-        onCreate={async (data) => {
+        onCreate={async () => {
           setShowCreateClient(false);
         }}
         onEdit={async () => {}}
