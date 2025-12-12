@@ -16,7 +16,8 @@ import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
 import kbRoutes from "./routes/kb.routes";
 import userRoutes from "./routes/user.routes";
-app.disable("x-powered-by");
+import clientRoutes from "./routes/client.routes";
+import reportsRoutes from "./routes/reports.routes";
 
 // Debug Middleware for CORS
 app.use((req, res, next) => {
