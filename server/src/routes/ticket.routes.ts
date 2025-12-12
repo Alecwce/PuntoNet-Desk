@@ -9,8 +9,12 @@ import {
 } from "../controllers/ticket.controller";
 import { uploadAttachment } from "../controllers/attachment.controller";
 import { upload } from "../middleware/upload.middleware";
+import { authenticate } from "../middleware/auth.middleware";
 
 const router = Router();
+
+// Apply authentication to all ticket routes
+router.use(authenticate);
 
 router.get("/", getTickets);
 router.get("/:id", getTicketById);
