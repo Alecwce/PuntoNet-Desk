@@ -176,10 +176,10 @@ app.use(
 // 9️⃣ START SERVER
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-app.listen(port, () => {
+app.listen(Number(port), "0.0.0.0", () => {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`🚀 Server running on port ${port}`);
-  console.log(`📍 Health check: http://localhost:${port}/health`);
+  console.log(`📍 Health check: http://0.0.0.0:${port}/health`);
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 });
 
