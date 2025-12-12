@@ -8,14 +8,20 @@ export interface User {
 
 export interface Ticket {
   id: string;
-  subject: string;
-  description: string; // Shared with backend
-  client: string;
+  title: string; // Used in frontend components
+  description: string;
+  category?: string;
+  client?: {
+    id: string;
+    name: string;
+    email: string;
+  };
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
-  assignee: User;
-  lastUpdate: string;
-  messages: ChatMessage[];
+  assignee?: User;
+  createdAt: string;
+  updatedAt: string;
+  messages?: ChatMessage[];
 }
 
 export interface ChatMessage {
