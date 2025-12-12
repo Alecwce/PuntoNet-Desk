@@ -1,0 +1,48 @@
+name: Security Audit
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  secret-scan:
+    name: 🕵️ Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for .env files
+        run: |
+          if find . -type f -name ".env*" -not -name ".env.example" | grep .; then
+            echo "❌ SECURITY ERROR: .env files detected in repository!"
+            echo "Please remove them immediately and rotate any exposed credentials."
+            exit 1
+          else
+            echo "✅ No exposed .env files found."
+          fi
+
+  dependency-audit:
+    name: 🛡️ Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Audit Root Dependencies
+        run: |
+          echo "🔍 Auditing root dependencies..."
+          # Audit only production dependencies or all? default is all.
+          # --audit-level=high means it fails only on high or critical
+          npm audit --audit-level=high
+
+      - name: Audit Backend Dependencies
+        run: |
+          echo "🔍 Auditing backend dependencies..."
+          cd server
+          npm audit --audit-level=high

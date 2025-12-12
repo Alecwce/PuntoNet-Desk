@@ -57,9 +57,11 @@ export const MOCK_TICKETS: Ticket[] = [
   {
     id: "TK-8923",
     subject: "Error al iniciar sesión en el portal",
+    description:
+      "El usuario reporta problemas al intentar ingresar con sus credenciales.",
     client: "Corporativo Alfa",
-    priority: "Crítica",
-    status: "Abierto",
+    priority: "CRITICAL",
+    status: "OPEN",
     assignee: {
       name: "Lucía Gómez",
       role: "Técnico",
@@ -72,15 +74,17 @@ export const MOCK_TICKETS: Ticket[] = [
   {
     id: "TK-12345",
     subject: "No puedo acceder a la VPN",
+    description: "Problemas de conexión con el cliente VPN global protect.",
     client: "Soluciones Globales",
-    priority: "Alta",
-    status: "En Progreso",
+    priority: "HIGH",
+    status: "IN_PROGRESS",
     assignee: CURRENT_USER,
     lastUpdate: "2024-07-22 08:30",
     messages: [
       {
         id: "1",
-        text: "Hola, no puedo conectarme a la VPN de la empresa. Me da un error de autenticación.",
+        content:
+          "Hola, no puedo conectarme a la VPN de la empresa. Me da un error de autenticación.",
         sender: "Ana López (Cliente)",
         avatar: AVATAR_URLS.ANA_LOPEZ,
         timestamp: "10:30 AM",
@@ -88,7 +92,8 @@ export const MOCK_TICKETS: Ticket[] = [
       },
       {
         id: "2",
-        text: "Hola Ana, buenos días. ¿Podrías confirmar si estás usando las credenciales correctas y si tu token está activo?",
+        content:
+          "Hola Ana, buenos días. ¿Podrías confirmar si estás usando las credenciales correctas y si tu token está activo?",
         sender: "Juan Pérez (Tú)",
         avatar: CURRENT_USER.avatar,
         timestamp: "10:32 AM",
@@ -96,7 +101,8 @@ export const MOCK_TICKETS: Ticket[] = [
       },
       {
         id: "3",
-        text: "Sí, estoy segura de que son las correctas. Dejó de funcionar esta mañana.",
+        content:
+          "Sí, estoy segura de que son las correctas. Dejó de funcionar esta mañana.",
         sender: "Ana López (Cliente)",
         avatar: AVATAR_URLS.ANA_LOPEZ,
         timestamp: "10:35 AM",
@@ -107,9 +113,11 @@ export const MOCK_TICKETS: Ticket[] = [
   {
     id: "TK-8921",
     subject: "Impresora no funciona en Contabilidad",
+    description:
+      "La impresora de red no responde a las solicitudes de impresión.",
     client: "Innovatech Inc.",
-    priority: "Media",
-    status: "Abierto",
+    priority: "MEDIUM",
+    status: "OPEN",
     assignee: {
       name: "Ana Jiménez",
       role: "Técnico",
@@ -122,9 +130,10 @@ export const MOCK_TICKETS: Ticket[] = [
   {
     id: "TK-8920",
     subject: "Solicitud de software: Adobe Photoshop",
+    description: "El departamento de diseño solicita licencia de Adobe.",
     client: "Corporativo Alfa",
-    priority: "Baja",
-    status: "En Progreso",
+    priority: "LOW",
+    status: "IN_PROGRESS",
     assignee: {
       name: "Carlos Ruiz",
       role: "Técnico",
@@ -137,9 +146,10 @@ export const MOCK_TICKETS: Ticket[] = [
   {
     id: "TK-8919",
     subject: "Reseteo de contraseña olvidado",
+    description: "Usuario bloqueado por intentos fallidos.",
     client: "Soluciones Globales",
-    priority: "Baja",
-    status: "Resuelto",
+    priority: "LOW",
+    status: "RESOLVED",
     assignee: {
       name: "Carlos Ruiz",
       role: "Técnico",

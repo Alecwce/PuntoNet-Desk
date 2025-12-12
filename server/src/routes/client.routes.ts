@@ -8,6 +8,12 @@ import {
 } from "../controllers/client.controller";
 import { authenticate, authorize } from "../middleware/auth.middleware";
 
+import { validateResource } from "../middleware/validate.middleware";
+import {
+  createClientSchema,
+  updateClientSchema,
+} from "../schemas/client.schema";
+
 const router = Router();
 
 // All routes require authentication
@@ -20,10 +26,20 @@ router.get("/", authorize(["ADMIN", "AGENT"]), getClients);
 router.get("/:id", authorize(["ADMIN", "AGENT"]), getClientById);
 
 // Create new client (ADMIN only)
-router.post("/", authorize(["ADMIN"]), createClient);
+router.post(
+  "/",
+  authorize(["ADMIN"]),
+  validateResource(createClientSchema),
+  createClient
+);
 
 // Update client (ADMIN only)
-router.put("/:id", authorize(["ADMIN"]), updateClient);
+router.put(
+  "/:id",
+  authorize(["ADMIN"]),
+  validateResource(updateClientSchema),
+  updateClient
+);
 
 // Delete client (ADMIN only)
 router.delete("/:id", authorize(["ADMIN"]), deleteClient);

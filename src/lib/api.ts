@@ -12,6 +12,17 @@ const api = axios.create({
   },
 });
 
+// Function to fetch CSRF token
+export const fetchCsrfToken = async () => {
+  try {
+    const { data } = await api.get("/csrf-token");
+    api.defaults.headers.common["CSRF-Token"] = data.csrfToken;
+    console.log("✅ CSRF Token fetched");
+  } catch (error) {
+    console.error("❌ Error fetching CSRF token:", error);
+  }
+};
+
 // Request interceptor for debug
 api.interceptors.request.use(
   (config) => {

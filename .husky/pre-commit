@@ -1,0 +1,22 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# 1. Security: Check for .env files
+if git diff --cached --name-only | grep -E '(\.env|server/\.env)'; then
+  echo "❌ SECURITY ERROR: You are trying to commit a .env file!"
+  echo "Please remove it from git tracking (git rm --cached ...)"
+  exit 1
+fi
+
+# 2. Frontend: Lint & Type Check
+echo "🔍 Checking Frontend..."
+npx tsc --noEmit || { echo "❌ Frontend TypeScript errors"; exit 1; }
+# Check if eslint config exists before running
+if [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
+  ESLINT_USE_FLAT_CONFIG=false npx eslint . || { echo "❌ Frontend Lint errors"; exit 1; }
+fi
+
+# 3. Backend: Lint & Type Check
+echo "🔍 Checking Backend..."
+cd server
+npm run build || { echo "❌ Backend TypeScript errors"; exit 1; }

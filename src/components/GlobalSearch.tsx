@@ -54,23 +54,6 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ onNavigate }) => {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const handleSelect = (view: ViewState, id: string) => {
-    onNavigate(view);
-    // If we had a direct way to set selected ID from here we would,
-    // but usually onNavigate handles the view switch.
-    // For ticket detail, App.tsx handles the selection state if we pass it,
-    // but the current onNavigate signature might need checking.
-    // Assuming we might need to enhance onNavigate or use a different pattern suitable for App.tsx
-    // For now, we will assume onNavigate matches App.tsx's capability or we will fix App.tsx next.
-    if (view === "ticket-detail") {
-      // We will need to trigger the selection logic in App.tsx
-      // The current GlobalSearch prop defines onNavigate as (view, id?) but App.tsx handles it slightly differently.
-      // We will fix App.tsx integration in the next step.
-    }
-    setIsOpen(false);
-    setQuery("");
-  };
-
   return (
     <div ref={wrapperRef} className="relative w-full max-w-md">
       <div className="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg px-3 h-10 border border-transparent focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/20 transition-all">

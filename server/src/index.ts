@@ -5,6 +5,7 @@ import helmet from "helmet";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
+import csurf from "csurf";
 
 dotenv.config();
 
@@ -25,14 +26,25 @@ import searchRoutes from "./routes/search.routes";
 // 1️⃣ CORS CONFIGURATION - DEBE IR PRIMERO
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const allowedOrigins = [
-  "https://punto-net-desk.vercel.app", // ⚠️ VERCEL FRONTEND (con guiones)
-  "https://puntonet-desk.vercel.app", // Alternativa sin guiones
-  "http://localhost:5173", // Desarrollo local
-  "http://localhost:3000", // Alternativa local
-  process.env.FRONTEND_URL, // Variable de entorno
-  process.env.CORS_ORIGIN, // Variable alternativa
-].filter(Boolean) as string[];
+const getAllowedOrigins = (): string[] => {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+    : [];
+
+  const defaultOrigins = [
+    "https://punto-net-desk.vercel.app",
+    "https://puntonet-desk.vercel.app",
+    "http://localhost:5173",
+    "http://localhost:3000",
+  ];
+
+  const uniqueOrigins = [
+    ...new Set([...envOrigins, ...defaultOrigins, process.env.FRONTEND_URL]),
+  ].filter(Boolean) as string[];
+  return uniqueOrigins;
+};
+
+const allowedOrigins = getAllowedOrigins();
 
 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 console.log("🔒 CORS Configuration:");
@@ -44,35 +56,33 @@ console.log("━━━━━━━━━━━━━━━━━━━━━━�
 app.use(
   cors({
     origin: function (origin, callback) {
-      console.log(`📨 Request from origin: ${origin || "no-origin"}`);
-
-      // Permitir requests sin origin (Postman, apps móviles, curl, etc)
+      // PROD: Block requests with no origin (unless explicitly allowed, e.g. defined in allowedOrigins like a specific mobile app scheme, but usually no-origin means script/server side)
+      // DEV: Allow no origin (Postman, curl)
       if (!origin) {
-        console.log("✅ Allowing request without origin");
-        return callback(null, true);
+        if (process.env.NODE_ENV !== "production") {
+          return callback(null, true);
+        }
+        // In production, we might want to block no-origin or verify carefully.
+        // For this app, we block it to be strictly browser-based or from known origins.
+        return callback(new Error("Not allowed by CORS (No Origin)"));
       }
 
-      // Verificar si está en la lista permitida
+      // Check against whitelist
       const isAllowed = allowedOrigins.some((allowed) => {
-        if (allowed && allowed.includes("*")) {
-          // Manejo de wildcards
+        if (allowed.includes("*")) {
           const pattern = allowed.replace("*.", "");
           return origin.endsWith(pattern);
         }
         return origin === allowed;
       });
 
-      // También permitir cualquier subdominio de vercel.app
+      // Explicitly allow any vercel.app subdomain (common for preview deployments)
       const isVercelSubdomain = origin.endsWith(".vercel.app");
 
       if (isAllowed || isVercelSubdomain) {
-        console.log(`✅ CORS allowed for: ${origin}`);
         callback(null, true);
       } else {
         console.warn(`🚫 CORS BLOCKED: ${origin}`);
-        console.warn(`   Allowed origins:`, allowedOrigins);
-        // En lugar de lanzar error, permitiremos pero logueamos
-        // callback(new Error("Not allowed by CORS"));
         callback(null, false);
       }
     },
@@ -84,6 +94,8 @@ app.use(
       "X-Requested-With",
       "Accept",
       "Origin",
+      "CSRF-Token", // Allow CSRF Token header
+      "X-CSRF-Token",
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
     maxAge: 86400,
@@ -93,19 +105,36 @@ app.use(
 );
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 2️⃣ HELMET Y OTROS HEADERS (DESPUÉS DE CORS)
+// 2️⃣ HELMET & PARSERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.disable("x-powered-by");
 app.use(helmet());
 app.use(cookieParser());
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3️⃣ BODY PARSERS
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 3️⃣ CSRF PROTECTION (After cookie parser)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+const csrfProtection = csurf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Secure in prod
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // None for cross-site (Vercel->Railway)
+  },
+});
+
+// Apply CSRF globally to all state-changing methods (POST, PUT, DELETE, PATCH)
+// AND expose an endpoint to get the token.
+// Note: We apply it globally but might exclude webhooks if any.
+app.use(csrfProtection);
+
+// CSRF Token Endpoint
+app.get("/api/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 4️⃣ LOGGING MIDDLEWARE
@@ -125,7 +154,7 @@ app.use((req, res, next) => {
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 6️⃣ HEALTH CHECK (antes de auth para verificar que funciona)
+// 6️⃣ HEALTH CHECK
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.get("/health", (req, res) => {
@@ -169,6 +198,10 @@ app.use(
     res: express.Response,
     next: express.NextFunction
   ) => {
+    if (err.code === "EBADCSRFTOKEN") {
+      console.warn("🚫 CSRF Attack detected:", req.ip);
+      return res.status(403).json({ error: "Invalid CSRF Token" });
+    }
     console.error("❌ Error:", err.message);
     res.status(500).json({ error: err.message || "Internal Server Error" });
   }

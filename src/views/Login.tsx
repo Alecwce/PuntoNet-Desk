@@ -2,12 +2,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { Icon } from "@/components/Icon";
 import api from "@/lib/api";
 import { AxiosError } from "axios";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface LoginProps {
-  onLogin: () => void;
+  onLogin: () => void; // Kept for interface compat but unused
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = () => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -52,8 +56,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       }
 
       // No 2FA - proceed with login
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      onLogin();
+      login(response.data.user);
+      navigate("/dashboard");
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
       console.error("Login error:", error);
@@ -120,8 +124,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         { headers: { "x-2fa-token": tempToken } }
       );
 
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      onLogin();
+      login(response.data.user);
+      navigate("/dashboard");
     } catch (err) {
       const error = err as AxiosError<{ message?: string }>;
       console.error("2FA error:", error);

@@ -26,8 +26,9 @@ router.get("/", authenticate, async (req, res) => {
           status: true,
         },
       }),
-      prisma.client.findMany({
+      prisma.user.findMany({
         where: {
+          role: "CLIENT",
           OR: [
             { name: { contains: q, mode: "insensitive" } },
             { email: { contains: q, mode: "insensitive" } },
