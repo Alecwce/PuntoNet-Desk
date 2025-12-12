@@ -91,8 +91,8 @@ export const login = async (req: Request, res: Response) => {
     // 6. Set HttpOnly Cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      secure: true, // Always true for SameSite=None
+      sameSite: "none", // Required for cross-site (Vercel -> Railway)
       maxAge: 24 * 60 * 60 * 1000, // 1 day
       path: "/",
     });
@@ -285,8 +285,8 @@ export const validate2FALogin = async (req: Request, res: Response) => {
 
     res.cookie("token", finalToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      secure: true,
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000,
       path: "/",
     });
