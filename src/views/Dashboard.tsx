@@ -155,7 +155,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
             Actividad Reciente
           </h3>
-          <div className="h-[300px] w-full">
+          <div style={{ height: 300, width: "100%" }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />

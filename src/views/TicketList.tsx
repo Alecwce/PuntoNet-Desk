@@ -39,7 +39,15 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
 
   const handleCreateTicket = async (data: any) => {
     try {
-      await api.post("/tickets", data);
+      const userStr = localStorage.getItem("user");
+      const user = userStr ? JSON.parse(userStr) : null;
+
+      if (!user?.id) {
+        console.error("User not logged in");
+        return;
+      }
+
+      await api.post("/tickets", { ...data, creatorId: user.id });
       setIsModalOpen(false);
       fetchTickets();
     } catch (error) {
