@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { KPI_DATA } from "../constants";
 import { Icon } from "../components/Icon";
 import { Ticket, ViewState } from "../types";
 import api from "../lib/api";
@@ -83,41 +82,91 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {KPI_DATA.map((kpi, idx) => (
-          <div
-            key={idx}
-            className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
-          >
-            <div
-              className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity`}
-            >
-              <Icon name="trending_up" className="text-6xl text-primary" />
-            </div>
-
-            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-              {kpi.label}
-            </p>
-            <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
-              {kpi.value}
-            </h3>
-
-            <div
-              className={`flex items-center gap-1 text-sm font-medium ${
-                kpi.trendColor === "green" ? "text-green-500" : "text-red-500"
-              }`}
-            >
-              <Icon
-                name={
-                  kpi.trendDirection === "up" ? "trending_up" : "trending_down"
-                }
-              />
-              <span>{kpi.trend}</span>
-              <span className="text-gray-400 dark:text-gray-500 ml-1 font-normal">
-                vs mes anterior
-              </span>
-            </div>
+        {/* KPI 1: Tickets Abiertos */}
+        <div className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Icon
+              name="confirmation_number"
+              className="text-6xl text-primary"
+            />
           </div>
-        ))}
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+            Tickets Abiertos
+          </p>
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
+            {
+              tickets.filter(
+                (t) => t.status === "OPEN" || t.status === "IN_PROGRESS"
+              ).length
+            }
+          </h3>
+          <div className="flex items-center gap-1 text-sm font-medium text-green-500">
+            <Icon name="trending_up" />
+            <span>En curso</span>
+          </div>
+        </div>
+
+        {/* KPI 2: Tickets Críticos */}
+        <div className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Icon name="warning" className="text-6xl text-red-500" />
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+            Críticos / Alta
+          </p>
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
+            {
+              tickets.filter(
+                (t) => t.priority === "CRITICAL" || t.priority === "HIGH"
+              ).length
+            }
+          </h3>
+          <div className="flex items-center gap-1 text-sm font-medium text-red-500">
+            <Icon name="priority_high" />
+            <span>Atención requerida</span>
+          </div>
+        </div>
+
+        {/* KPI 3: Tickets Resueltos */}
+        <div className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Icon name="check_circle" className="text-6xl text-green-500" />
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+            Tickets Resueltos
+          </p>
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
+            {
+              tickets.filter(
+                (t) => t.status === "RESOLVED" || t.status === "CLOSED"
+              ).length
+            }
+          </h3>
+          <div className="flex items-center gap-1 text-sm font-medium text-green-500">
+            <Icon name="task_alt" />
+            <span>Total completados</span>
+          </div>
+        </div>
+
+        {/* KPI 4: Satisfacción (Mock por ahora, requiere backend feedback) */}
+        <div className="group relative p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Icon
+              name="sentiment_satisfied"
+              className="text-6xl text-yellow-500"
+            />
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+            Satisfacción
+          </p>
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mt-2 mb-1">
+            98%
+          </h3>
+          <div className="flex items-center gap-1 text-sm font-medium text-yellow-500">
+            <Icon name="star" />
+            <span>Excelencia</span>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
