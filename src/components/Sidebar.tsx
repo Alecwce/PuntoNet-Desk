@@ -56,14 +56,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex flex-col justify-between p-4 h-full">
         <div className="flex flex-col gap-4">
           <div
-            className="flex items-center justify-center px-3 py-4 cursor-pointer group"
+            className="flex items-center gap-3 px-4 py-6 cursor-pointer group border-b border-gray-100 dark:border-gray-800"
             onClick={() => onNavigate("dashboard")}
           >
             <img
               src="/logo1.png"
-              alt="PuntoNet Desk Logo"
-              className="h-12 w-auto transition-transform group-hover:scale-105"
+              alt="PuntoNet Logo"
+              className="h-10 w-10 object-contain transition-transform group-hover:scale-110"
             />
+            <div className="flex flex-col">
+              <span className="font-extrabold text-lg text-gray-900 dark:text-white tracking-tight">
+                PuntoNet
+              </span>
+              <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                Service Desk
+              </span>
+            </div>
           </div>
 
           <nav className="flex flex-col gap-2 mt-4">

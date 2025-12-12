@@ -19,6 +19,7 @@ import kbRoutes from "./routes/kb.routes";
 import userRoutes from "./routes/user.routes";
 import clientRoutes from "./routes/client.routes";
 import reportsRoutes from "./routes/reports.routes";
+import searchRoutes from "./routes/search.routes";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1️⃣ CORS CONFIGURATION - DEBE IR PRIMERO
@@ -155,6 +156,7 @@ app.use("/api/kb", kbRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/search", searchRoutes);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 8️⃣ ERROR HANDLING
