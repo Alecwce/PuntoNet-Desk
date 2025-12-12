@@ -12,6 +12,7 @@ const app = express();
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 
+// Route imports
 import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
 import kbRoutes from "./routes/kb.routes";
@@ -19,64 +20,134 @@ import userRoutes from "./routes/user.routes";
 import clientRoutes from "./routes/client.routes";
 import reportsRoutes from "./routes/reports.routes";
 
-// Debug Middleware for CORS
-app.use((req, res, next) => {
-  console.log(`📨 ${req.method} ${req.path} - Origin: ${req.headers.origin}`);
-  next();
-});
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 1️⃣ CORS CONFIGURATION - DEBE IR PRIMERO
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// CORS Configuration - ROBUST & CRITICAL
 const allowedOrigins = [
-  "https://punto-net-desk.vercel.app", // Production Vercel (Current)
-  "https://puntonet-desk.vercel.app", // Production Vercel (Alternative)
-  "http://localhost:5173", // Local Frontend
-  "http://localhost:3000", // Local Alt
-  process.env.FRONTEND_URL, // Env Variable
-  process.env.CORS_ORIGIN, // Env Variable
-].filter(Boolean);
+  "https://punto-net-desk.vercel.app", // ⚠️ VERCEL FRONTEND (con guiones)
+  "https://puntonet-desk.vercel.app", // Alternativa sin guiones
+  "http://localhost:5173", // Desarrollo local
+  "http://localhost:3000", // Alternativa local
+  process.env.FRONTEND_URL, // Variable de entorno
+  process.env.CORS_ORIGIN, // Variable alternativa
+].filter(Boolean) as string[];
+
+console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+console.log("🔒 CORS Configuration:");
+console.log("   Allowed Origins:", allowedOrigins);
+console.log("   NODE_ENV:", process.env.NODE_ENV);
+console.log("   PORT:", port);
+console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, postman)
-      if (!origin) return callback(null, true);
+    origin: function (origin, callback) {
+      console.log(`📨 Request from origin: ${origin || "no-origin"}`);
 
-      // Check if origin is allowed or matches wildcard pattern
+      // Permitir requests sin origin (Postman, apps móviles, curl, etc)
+      if (!origin) {
+        console.log("✅ Allowing request without origin");
+        return callback(null, true);
+      }
+
+      // Verificar si está en la lista permitida
       const isAllowed = allowedOrigins.some((allowed) => {
-        if (!allowed) return false;
-        if (allowed.includes("*")) {
-          // Handle wildcards if present in list (e.g. *.vercel.app)
+        if (allowed && allowed.includes("*")) {
+          // Manejo de wildcards
           const pattern = allowed.replace("*.", "");
           return origin.endsWith(pattern);
         }
-        return origin === allowed || origin.endsWith(".vercel.app"); // Explicit vercel subdomain support
+        return origin === allowed;
       });
 
-      if (isAllowed) {
+      // También permitir cualquier subdominio de vercel.app
+      const isVercelSubdomain = origin.endsWith(".vercel.app");
+
+      if (isAllowed || isVercelSubdomain) {
+        console.log(`✅ CORS allowed for: ${origin}`);
         callback(null, true);
       } else {
-        console.warn(`🚫 CORS blocked origin: ${origin}`);
+        console.warn(`🚫 CORS BLOCKED: ${origin}`);
+        console.warn(`   Allowed origins:`, allowedOrigins);
+        // En lugar de lanzar error, permitiremos pero logueamos
+        // callback(new Error("Not allowed by CORS"));
         callback(null, false);
-        // callback(new Error("Not allowed by CORS")); // Don't crash, just block
       }
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+    ],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
-    maxAge: 86400, // 24 hours
+    maxAge: 86400,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   })
 );
 
-// Handle preflight requests
-app.options("*", cors());
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 2️⃣ HELMET Y OTROS HEADERS (DESPUÉS DE CORS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+app.disable("x-powered-by");
 app.use(helmet());
 app.use(cookieParser());
-app.use(express.json());
 
-// Serve static files from uploads directory
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 3️⃣ BODY PARSERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 4️⃣ LOGGING MIDDLEWARE
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.use((req, res, next) => {
+  console.log(
+    `${req.method} ${req.path} - Origin: ${req.headers.origin || "none"}`
+  );
+  next();
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 5️⃣ STATIC FILES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 6️⃣ HEALTH CHECK (antes de auth para verificar que funciona)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+app.get("/health", (req, res) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    cors_origins: allowedOrigins,
+    node_env: process.env.NODE_ENV,
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    cors_origins: allowedOrigins,
+    node_env: process.env.NODE_ENV,
+  });
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 7️⃣ API ROUTES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
@@ -85,26 +156,31 @@ app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);
 app.use("/api/reports", reportsRoutes);
 
-// Basic health check
-app.get("/health", (req, res) => {
-  res.json({
-    status: "healthy",
-    timestamp: new Date(),
-    cors_origins: allowedOrigins,
-  });
-});
-// Maintain compatibility with /api/health as well
-app.get("/api/health", (req, res) => {
-  res.json({
-    status: "healthy",
-    timestamp: new Date(),
-    cors_origins: allowedOrigins,
-  });
-});
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 8️⃣ ERROR HANDLING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// Start server
+app.use(
+  (
+    err: any,
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    console.error("❌ Error:", err.message);
+    res.status(500).json({ error: err.message || "Internal Server Error" });
+  }
+);
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 9️⃣ START SERVER
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log(`🚀 Server running on port ${port}`);
+  console.log(`📍 Health check: http://localhost:${port}/health`);
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 });
 
 export { app, prisma };
