@@ -1,50 +1,61 @@
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ViewState } from "../types";
 import { Icon } from "./Icon";
 
 interface SidebarProps {
-  currentView: ViewState;
-  onNavigate: (view: ViewState) => void;
   onLogout: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({
-  currentView,
-  onNavigate,
-  onLogout,
-}) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Get real user from localStorage
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
 
+  const currentPath = location.pathname;
+
   const menuItems = [
     {
       id: "dashboard",
+      path: "/dashboard",
       label: "Dashboard",
       icon: "dashboard",
       roles: ["ADMIN", "AGENT", "CLIENT"],
     },
     {
       id: "tickets",
+      path: "/tickets",
       label: "Gestión de Tickets",
       icon: "confirmation_number",
       roles: ["ADMIN", "AGENT", "CLIENT"],
     },
     {
       id: "kb",
+      path: "/kb",
       label: "Base de Conocimiento",
       icon: "menu_book",
       roles: ["ADMIN", "AGENT", "CLIENT"],
     },
     {
       id: "clients",
+      path: "/clients",
       label: "Clientes",
       icon: "group",
       roles: ["ADMIN", "AGENT"],
     },
-    { id: "reports", label: "Reportes", icon: "bar_chart", roles: ["ADMIN"] },
+    {
+      id: "reports",
+      path: "/reports",
+      label: "Reportes",
+      icon: "bar_chart",
+      roles: ["ADMIN"],
+    },
     {
       id: "settings",
+      path: "/settings",
       label: "Configuración",
       icon: "settings",
       roles: ["ADMIN", "AGENT", "CLIENT"],
@@ -57,7 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex flex-col gap-4">
           <div
             className="flex items-center gap-3 px-4 py-6 cursor-pointer group border-b border-gray-100 dark:border-gray-800"
-            onClick={() => onNavigate("dashboard")}
+            onClick={() => navigate("/dashboard")}
           >
             <img
               src="/logo1.png"
@@ -78,14 +89,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {menuItems
               .filter((item) => user && item.roles.includes(user.role))
               .map((item) => {
-                // Simple logic to highlight parent views
-                const isActive =
-                  currentView === item.id ||
-                  (item.id === "tickets" && currentView === "ticket-detail");
+                const isActive = currentPath.startsWith(item.path);
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onNavigate(item.id as ViewState)}
+                    onClick={() => navigate(item.path)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-DEFAULT transition-colors ${
                       isActive
                         ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-white"

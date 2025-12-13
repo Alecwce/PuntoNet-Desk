@@ -8,24 +8,18 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { Ticket, ViewState } from "../types";
+import { useNavigate } from "react-router-dom";
+import { Ticket } from "../types";
 import { Icon } from "../components/Icon";
 
 interface DashboardProps {
   tickets: Ticket[];
-  onTicketSelect: (id: string) => void;
-  onViewAll: () => void;
-  onNavigate: (view: ViewState) => void;
   onRefresh?: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({
-  tickets,
-  onTicketSelect,
-  onViewAll,
-  onNavigate,
-  onRefresh,
-}) => {
+export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
+  const navigate = useNavigate();
+
   const stats = {
     total: tickets.length,
     open: tickets.filter((t) => t.status === "OPEN").length,
@@ -69,7 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </button>
           )}
           <button
-            onClick={() => onNavigate("tickets")}
+            onClick={() => navigate("/tickets")}
             className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
           >
             <Icon name="add" />
@@ -182,7 +176,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               Tickets Recientes
             </h3>
             <button
-              onClick={onViewAll}
+              onClick={() => navigate("/tickets")}
               className="text-sm text-primary hover:text-primary/80 font-medium"
             >
               Ver todos
@@ -193,7 +187,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               recentTickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  onClick={() => onTicketSelect(ticket.id)}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
                   className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-700"
                 >
                   <div

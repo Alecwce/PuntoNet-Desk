@@ -99,6 +99,7 @@ app.use(
       "Origin",
       "CSRF-Token", // Allow CSRF Token header
       "X-CSRF-Token",
+      "x-2fa-token",
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
     maxAge: 86400,

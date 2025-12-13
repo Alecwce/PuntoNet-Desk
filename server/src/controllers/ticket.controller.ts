@@ -84,14 +84,20 @@ export const getTicketById = async (req: Request, res: Response) => {
 };
 
 export const createTicket = async (req: Request, res: Response) => {
-  const { subject, description, priority, creatorId } = req.body;
+  const { subject, description, priority } = req.body;
+  const user = (req as any).user;
+
+  if (!user || !user.id) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   try {
     const ticket = await prisma.ticket.create({
       data: {
         subject,
         description,
         priority,
-        creatorId,
+        creatorId: user.id,
         status: "OPEN",
       },
       include: { assignee: true, creator: true },

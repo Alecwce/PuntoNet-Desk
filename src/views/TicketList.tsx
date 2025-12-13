@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
 import api from "../lib/api";
 import { Ticket } from "../types";
 
-interface TicketListProps {
-  onTicketSelect: (id: string) => void;
-}
-
-export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
+export const TicketList: React.FC = () => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -39,15 +37,8 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
 
   const handleCreateTicket = async (data: any) => {
     try {
-      const userStr = localStorage.getItem("user");
-      const user = userStr ? JSON.parse(userStr) : null;
-
-      if (!user?.id) {
-        console.error("User not logged in");
-        return;
-      }
-
-      await api.post("/tickets", { ...data, creatorId: user.id });
+      // CreatorId is now handled by the backend
+      await api.post("/tickets", data);
       setIsModalOpen(false);
       fetchTickets();
     } catch (error) {
@@ -187,7 +178,7 @@ export const TicketList: React.FC<TicketListProps> = ({ onTicketSelect }) => {
                 {currentTickets.map((ticket) => (
                   <tr
                     key={ticket.id}
-                    onClick={() => onTicketSelect(ticket.id)}
+                    onClick={() => navigate(`/tickets/${ticket.id}`)}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors group"
                   >
                     <td className="p-4">

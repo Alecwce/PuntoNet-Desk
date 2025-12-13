@@ -1,17 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon";
-import { Ticket, ChatMessage } from "../types";
+import { Ticket } from "../types";
 import api from "../lib/api";
 
-interface TicketDetailProps {
-  ticketId: string;
-  onBack: () => void;
-}
-
-export const TicketDetail: React.FC<TicketDetailProps> = ({
-  ticketId,
-  onBack,
-}) => {
+export const TicketDetail: React.FC = () => {
+  const { ticketId } = useParams<{ ticketId: string }>();
+  const navigate = useNavigate();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("activity");
@@ -20,6 +15,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
 
   // Fetch ticket data
   const fetchTicket = async () => {
+    if (!ticketId) return;
     try {
       const response = await api.get(`/tickets/${ticketId}`);
       setTicket(response.data);
@@ -107,7 +103,7 @@ export const TicketDetail: React.FC<TicketDetailProps> = ({
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <button
-            onClick={onBack}
+            onClick={() => navigate("/tickets")}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full text-gray-500 dark:text-gray-400"
           >
             <Icon name="arrow_back" />

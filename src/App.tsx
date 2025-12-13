@@ -1,4 +1,11 @@
 import { useState, useEffect } from "react";
+import {
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { Login } from "./views/Login";
@@ -6,7 +13,7 @@ import { TwoFactor } from "./views/TwoFactor";
 import { Dashboard } from "./views/Dashboard";
 import { TicketList } from "./views/TicketList";
 import { TicketDetail } from "./views/TicketDetail";
-import { ViewState, Ticket } from "./types";
+import { Ticket } from "./types";
 import { MOCK_TICKETS } from "./constants";
 import api, { fetchCsrfToken } from "./lib/api";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -16,8 +23,8 @@ import { Clients } from "./views/Clients";
 import { Reports } from "./views/Reports";
 
 function App() {
-  const [currentView, setCurrentView] = useState<ViewState>("login");
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS);
 
   useEffect(() => {
@@ -26,12 +33,6 @@ function App() {
     };
     init();
   }, []);
-
-  useEffect(() => {
-    if (currentView === "dashboard" || currentView === "tickets") {
-      fetchTickets();
-    }
-  }, [currentView]);
 
   const fetchTickets = async () => {
     try {
@@ -44,9 +45,18 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (
+      location.pathname === "/dashboard" ||
+      location.pathname === "/tickets"
+    ) {
+      fetchTickets();
+    }
+  }, [location.pathname]);
+
   // Authentication Flow Handlers
-  const handleLogin = () => setCurrentView("dashboard");
-  const handleVerify = () => setCurrentView("dashboard");
+  const handleLogin = () => navigate("/dashboard");
+  const handleVerify = () => navigate("/dashboard");
   const handleLogout = async () => {
     try {
       await api.post("/auth/logout");
@@ -54,104 +64,107 @@ function App() {
       console.error("Logout error:", error);
     }
     localStorage.removeItem("user");
-    setCurrentView("login");
-    setSelectedTicketId(null);
+    navigate("/login");
   };
 
-  // Navigation Handlers
-  const handleNavigate = (view: ViewState, id?: string) => {
-    setCurrentView(view);
-    if (view === "ticket-detail" && id) {
-      setSelectedTicketId(id);
-    } else if (view !== "ticket-detail") {
-      setSelectedTicketId(null);
-    }
-  };
-
-  const handleTicketSelect = (id: string) => {
-    setSelectedTicketId(id);
-    setCurrentView("ticket-detail");
-  };
-
-  // Render logic based on state
-  if (currentView === "login") {
-    return <Login onLogin={handleLogin} />;
-  }
-
-  if (currentView === "2fa") {
-    return <TwoFactor onVerify={handleVerify} />;
-  }
-
-  return (
+  const MainLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark">
-      <Sidebar
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        onLogout={handleLogout}
-      />
-
+      <Sidebar onLogout={handleLogout} />
       <div className="flex flex-1 flex-col overflow-hidden relative">
         <TopBar
           title={
-            currentView === "ticket-detail"
-              ? undefined
-              : currentView === "tickets"
-              ? "Gestión de Tickets"
-              : undefined
+            location.pathname === "/tickets" ? "Gestión de Tickets" : undefined
           }
         />
-        <main className="flex-1 overflow-y-auto p-6">
-          {currentView === "dashboard" && (
-            <Dashboard
-              tickets={tickets}
-              onTicketSelect={handleTicketSelect}
-              onViewAll={() => setCurrentView("tickets")}
-              onNavigate={handleNavigate}
-              onRefresh={fetchTickets}
-            />
-          )}
-
-          {currentView === "tickets" && (
-            <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-              <TicketList onTicketSelect={handleTicketSelect} />
-            </ProtectedRoute>
-          )}
-
-          {currentView === "ticket-detail" && selectedTicketId && (
-            <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-              <TicketDetail
-                ticketId={selectedTicketId}
-                onBack={() => handleNavigate("tickets")}
-              />
-            </ProtectedRoute>
-          )}
-
-          {currentView === "kb" && (
-            <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-              <KnowledgeBase />
-            </ProtectedRoute>
-          )}
-
-          {currentView === "settings" && (
-            <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-              <Settings />
-            </ProtectedRoute>
-          )}
-
-          {currentView === "clients" && (
-            <ProtectedRoute allowedRoles={["ADMIN", "AGENT"]}>
-              <Clients />
-            </ProtectedRoute>
-          )}
-
-          {currentView === "reports" && (
-            <ProtectedRoute allowedRoles={["ADMIN"]}>
-              <Reports />
-            </ProtectedRoute>
-          )}
-        </main>
+        <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/login" element={<Login onLogin={handleLogin} />} />
+      <Route path="/2fa" element={<TwoFactor onVerify={handleVerify} />} />
+
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
+            <MainLayout>
+              <Dashboard tickets={tickets} onRefresh={fetchTickets} />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/tickets"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
+            <MainLayout>
+              <TicketList />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/tickets/:ticketId"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
+            <MainLayout>
+              <TicketDetail />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/kb"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
+            <MainLayout>
+              <KnowledgeBase />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
+            <MainLayout>
+              <Settings />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT"]}>
+            <MainLayout>
+              <Clients />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/reports"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN"]}>
+            <MainLayout>
+              <Reports />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }
 
