@@ -97,12 +97,14 @@ app.use(
       "X-Requested-With",
       "Accept",
       "Origin",
-      "CSRF-Token", // Allow CSRF Token header
+      "CSRF-Token",
       "X-CSRF-Token",
       "x-2fa-token",
+      "Access-Control-Allow-Headers",
+      "Access-Control-Request-Headers",
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
-    maxAge: 86400,
+    maxAge: 600, // Reduced maxAge to 10 mins for easier debugging
     preflightContinue: false,
     optionsSuccessStatus: 204,
   })
