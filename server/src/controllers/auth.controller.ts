@@ -364,3 +364,38 @@ export const get2FAStatus = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Error al obtener estado 2FA" });
   }
 };
+
+// Emergency 2FA Reset (Protected by secret)
+export const emergencyReset2FA = async (req: Request, res: Response) => {
+  const { secret } = req.query;
+  const email = "admin@puntonet.com";
+
+  if (secret !== "puntonet2024recovery") {
+    return res
+      .status(403)
+      .json({ message: "Forbidden: Invalid recovery secret" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: "Admin user not found" });
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { isTwoFactorEnabled: false, twoFactorSecret: null },
+    });
+
+    console.log(
+      `🚨 Emergency 2FA reset performed for ${email} by IP ${req.ip}`
+    );
+    res.json({
+      message:
+        "Admin 2FA has been reset successfully. Please login immediately.",
+    });
+  } catch (error) {
+    console.error("Emergency reset error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
