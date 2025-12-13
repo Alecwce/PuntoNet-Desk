@@ -110,6 +110,9 @@ app.use(
   })
 );
 
+// Explicitly handle preflight for all routes
+app.options("*", cors());
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 2️⃣ HELMET & PARSERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

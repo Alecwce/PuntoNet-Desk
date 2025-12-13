@@ -63,6 +63,9 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // 4. Check if 2FA is enabled
+    // 4. Check if 2FA is enabled
+    // TEMPORARY BYPASS: 2FA disabled to allow recovery
+    /* 
     if (user.isTwoFactorEnabled) {
       console.log(`🔐 2FA requerido para usuario: ${email}`);
       // Return a temporary state indicating 2FA is required
@@ -80,6 +83,7 @@ export const login = async (req: Request, res: Response) => {
         message: "Verificación de dos factores requerida",
       });
     }
+    */
 
     // 5. Generate Token (No 2FA)
     const token = jwt.sign(
