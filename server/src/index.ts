@@ -130,10 +130,15 @@ const csrfProtection = csurf({
   },
 });
 
-// Apply CSRF globally to all state-changing methods (POST, PUT, DELETE, PATCH)
-// AND expose an endpoint to get the token.
-// Note: We apply it globally but might exclude webhooks if any.
-app.use(csrfProtection);
+// Apply CSRF protection selectively (exclude auth routes)
+// Auth routes are protected by rate limiting instead
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/auth/")) {
+    // Skip CSRF for auth routes - they have rate limiting
+    return next();
+  }
+  csrfProtection(req, res, next);
+});
 
 // CSRF Token Endpoint
 app.get("/api/csrf-token", (req, res) => {
