@@ -8,7 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:all": "npm run build && cd server && npm run build",
-    "install:all": "npm install && cd server && npm install"
+    "install:all": "npm install && cd server && npm install",
+    "test": "npm run test:client && npm run test:server",
+    "test:client": "vitest",
+    "test:server": "cd server && npm test",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@prisma/client": "^7.0.1",
@@ -28,6 +32,9 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/file-saver": "^2.0.7",
@@ -42,11 +49,13 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "husky": "^9.1.7",
+    "jsdom": "^27.3.0",
     "nodemon": "^3.1.11",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vitest": "^4.0.15"
   }
 }

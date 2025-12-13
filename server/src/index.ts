@@ -59,15 +59,9 @@ console.log("━━━━━━━━━━━━━━━━━━━━━━�
 app.use(
   cors({
     origin: function (origin, callback) {
-      // PROD: Block requests with no origin (unless explicitly allowed, e.g. defined in allowedOrigins like a specific mobile app scheme, but usually no-origin means script/server side)
-      // DEV: Allow no origin (Postman, curl)
+      // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) {
-        if (process.env.NODE_ENV !== "production") {
-          return callback(null, true);
-        }
-        // In production, we might want to block no-origin or verify carefully.
-        // For this app, we block it to be strictly browser-based or from known origins.
-        return callback(new Error("Not allowed by CORS (No Origin)"));
+        return callback(null, true);
       }
 
       // Check against whitelist
@@ -80,7 +74,8 @@ app.use(
       });
 
       // Explicitly allow any vercel.app subdomain (common for preview deployments)
-      const isVercelSubdomain = origin.endsWith(".vercel.app");
+      // Using Regex for safer matching
+      const isVercelSubdomain = /https:\/\/.*\.vercel\.app$/.test(origin);
 
       if (isAllowed || isVercelSubdomain) {
         callback(null, true);

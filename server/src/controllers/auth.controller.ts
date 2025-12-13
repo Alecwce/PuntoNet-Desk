@@ -10,7 +10,7 @@ import * as QRCode from "qrcode";
 authenticator.options = {
   digits: 6,
   step: 30, // 30 seconds window
-  window: 1, // Allow 1 step before/after for clock drift
+  window: 2, // Allow 2 steps before/after for clock drift (approx 1 min)
 };
 
 const loginSchema = z.object({
@@ -64,8 +64,7 @@ export const login = async (req: Request, res: Response) => {
 
     // 4. Check if 2FA is enabled
     // 4. Check if 2FA is enabled
-    // TEMPORARY BYPASS: 2FA disabled to allow recovery
-    /* 
+    // 4. Check if 2FA is enabled
     if (user.isTwoFactorEnabled) {
       console.log(`🔐 2FA requerido para usuario: ${email}`);
       // Return a temporary state indicating 2FA is required
@@ -83,7 +82,6 @@ export const login = async (req: Request, res: Response) => {
         message: "Verificación de dos factores requerida",
       });
     }
-    */
 
     // 5. Generate Token (No 2FA)
     const token = jwt.sign(
