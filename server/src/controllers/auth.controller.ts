@@ -62,17 +62,16 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Credenciales inválidas" });
     }
 
-    // 4. Check if 2FA is enabled
-    // 4. Check if 2FA is enabled
-    // 4. Check if 2FA is enabled
+    // ==========================================
+    // 2FA PERMANENTLY DISABLED - USER REQUEST
+    // ==========================================
+    /*
     if (user.isTwoFactorEnabled) {
       console.log(`🔐 2FA requerido para usuario: ${email}`);
-      // Return a temporary state indicating 2FA is required
-      // We use a short-lived token to identify the user during 2FA validation
       const tempToken = jwt.sign(
         { userId: user.id, purpose: "2fa-validation" },
         process.env.JWT_SECRET || "default-secret-key",
-        { expiresIn: "5m" } // Only 5 minutes to complete 2FA
+        { expiresIn: "5m" }
       );
 
       return res.json({
@@ -82,6 +81,7 @@ export const login = async (req: Request, res: Response) => {
         message: "Verificación de dos factores requerida",
       });
     }
+    */
 
     // 5. Generate Token (No 2FA)
     const token = jwt.sign(
