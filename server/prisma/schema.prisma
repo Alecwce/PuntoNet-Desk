@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -45,13 +45,13 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Two-Factor Authentication
-  twoFactorSecret     String?
-  isTwoFactorEnabled  Boolean  @default(false)
+  twoFactorSecret    String?
+  isTwoFactorEnabled Boolean @default(false)
 
-  ticketsAssigned     Ticket[]         @relation("AssignedTo")
-  ticketsCreated      Ticket[]         @relation("CreatedBy")
-  messages            Message[]
-  uploadedAttachments Attachment[]
+  ticketsAssigned       Ticket[]        @relation("AssignedTo")
+  ticketsCreated        Ticket[]        @relation("CreatedBy")
+  messages              Message[]
+  uploadedAttachments   Attachment[]
   knowledgeBaseArticles KnowledgeBase[]
 }
 
@@ -72,6 +72,10 @@ model Ticket {
 
   messages    Message[]
   attachments Attachment[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
 }
 
 model Message {
@@ -102,16 +106,16 @@ model Attachment {
 }
 
 model KnowledgeBase {
-  id        String           @id @default(uuid())
+  id        String   @id @default(uuid())
   title     String
   content   String
   category  String?
   tags      String[]
-  status    KBStatus         @default(PUBLISHED)
-  views     Int              @default(0)
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  status    KBStatus @default(PUBLISHED)
+  views     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  authorId  String
-  author    User             @relation(fields: [authorId], references: [id])
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id])
 }
