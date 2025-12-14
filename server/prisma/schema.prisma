@@ -76,6 +76,8 @@ model Ticket {
   @@index([status])
   @@index([priority])
   @@index([assigneeId])
+  // Index for faster relation lookups (tickets by creator)
+  @@index([creatorId])
 }
 
 model Message {
@@ -88,6 +90,10 @@ model Message {
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
+  // Indexes for faster relation lookups
+  @@index([ticketId])
+  @@index([senderId])
 }
 
 model Attachment {
@@ -103,6 +109,10 @@ model Attachment {
 
   uploaderId String
   uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  // Indexes for faster relation lookups
+  @@index([ticketId])
+  @@index([uploaderId])
 }
 
 model KnowledgeBase {
@@ -118,4 +128,8 @@ model KnowledgeBase {
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
+
+  // Indexes for faster filtering and relation lookups
+  @@index([authorId])
+  @@index([category])
 }
