@@ -76,6 +76,7 @@ model Ticket {
   @@index([status])
   @@index([priority])
   @@index([assigneeId])
+  @@index([creatorId]) // Optimization: Speed up "My Tickets" queries
 }
 
 model Message {
@@ -88,6 +89,8 @@ model Message {
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
+  @@index([ticketId]) // Optimization: Speed up loading messages for a ticket
 }
 
 model Attachment {
@@ -103,6 +106,8 @@ model Attachment {
 
   uploaderId String
   uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  @@index([ticketId]) // Optimization: Speed up loading attachments for a ticket
 }
 
 model KnowledgeBase {
