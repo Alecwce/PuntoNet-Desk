@@ -4,11 +4,13 @@ import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
 import api from "../lib/api";
 import { Ticket } from "../types";
+import { useDebounce } from "../hooks/useDebounce";
 
 export const TicketList: React.FC = () => {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 500);
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -16,13 +18,13 @@ export const TicketList: React.FC = () => {
 
   useEffect(() => {
     fetchTickets();
-  }, [search, statusFilter, priorityFilter]);
+  }, [debouncedSearch, statusFilter, priorityFilter]);
 
   const fetchTickets = async () => {
     setLoading(true);
     try {
       const params: any = {};
-      if (search) params.search = search;
+      if (debouncedSearch) params.search = debouncedSearch;
       if (statusFilter !== "all") params.status = statusFilter;
       if (priorityFilter !== "all") params.priority = priorityFilter;
 
