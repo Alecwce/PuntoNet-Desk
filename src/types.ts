@@ -8,8 +8,6 @@ export interface User {
 
 export interface Ticket {
   id: string;
-export interface Ticket {
-  id: string;
   subject: string; // Matches backend property
   description: string;
   category?: string;
