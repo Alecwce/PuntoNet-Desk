@@ -1,16 +1,8 @@
 import React, { useState, useEffect } from "react";
 import api from "../lib/api";
-import { CURRENT_USER } from "../constants";
-import { TwoFactorSetup } from "../components/TwoFactorSetup";
+import { User } from "../types";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar: string | null;
-  createdAt: string;
-}
+import { TwoFactorSetup } from "../components/TwoFactorSetup";
 
 interface UserFormData {
   name: string;
@@ -20,7 +12,12 @@ interface UserFormData {
   avatar: string;
 }
 
-export const Settings: React.FC = () => {
+interface SettingsProps {
+  user: User | null;
+  onUpdateUser: (user: User) => void;
+}
+
+export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
   const [activeTab, setActiveTab] = useState<"profile" | "users">("profile");
   const [users, setUsers] = useState<User[]>([]);
 
@@ -33,11 +30,22 @@ export const Settings: React.FC = () => {
 
   // Profile Form State
   const [profileData, setProfileData] = useState({
-    name: CURRENT_USER.name,
-    avatar: CURRENT_USER.avatar || "",
+    name: user?.name || "",
+    avatar: user?.avatar || "",
     password: "",
     confirmPassword: "",
   });
+
+  // Update profile data when user prop changes
+  useEffect(() => {
+    if (user) {
+      setProfileData((prev) => ({
+        ...prev,
+        name: user.name,
+        avatar: user.avatar || "",
+      }));
+    }
+  }, [user]);
 
   // 2FA State
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
@@ -52,10 +60,10 @@ export const Settings: React.FC = () => {
   });
 
   useEffect(() => {
-    if (activeTab === "users" && CURRENT_USER.role === "ADMIN") {
+    if (activeTab === "users" && user?.role === "ADMIN") {
       fetchUsers();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   // Fetch 2FA status on mount
   useEffect(() => {
@@ -90,13 +98,21 @@ export const Settings: React.FC = () => {
     }
 
     try {
-      const userId = CURRENT_USER.id;
+      const userId = user!.id;
       await api.put(`/users/${userId}`, {
         name: profileData.name,
         avatar: profileData.avatar,
         password: profileData.password || undefined,
       });
       alert("Perfil actualizado correctamente");
+
+      // Sync with App state
+      onUpdateUser({
+        ...user!,
+        name: profileData.name,
+        avatar: profileData.avatar || "",
+      });
+
       setProfileData({ ...profileData, password: "", confirmPassword: "" });
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -211,7 +227,7 @@ export const Settings: React.FC = () => {
         >
           Mi Perfil
         </button>
-        {CURRENT_USER.role === "ADMIN" && (
+        {user?.role === "ADMIN" && (
           <button
             className={`px-4 py-2 font-medium text-sm transition-colors ${
               activeTab === "users"
@@ -340,7 +356,7 @@ export const Settings: React.FC = () => {
           </>
         )}
 
-        {activeTab === "users" && CURRENT_USER.role === "ADMIN" && (
+        {activeTab === "users" && user?.role === "ADMIN" && (
           <div>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold text-gray-800 dark:text-white">
@@ -420,7 +436,9 @@ export const Settings: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(user.createdAt).toLocaleDateString()}
+                        {user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button

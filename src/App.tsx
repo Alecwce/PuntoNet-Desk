@@ -6,6 +6,8 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
+import { Toaster } from "sonner";
+import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { Login } from "./views/Login";
@@ -13,7 +15,7 @@ import { TwoFactor } from "./views/TwoFactor";
 import { Dashboard } from "./views/Dashboard";
 import { TicketList } from "./views/TicketList";
 import { TicketDetail } from "./views/TicketDetail";
-import { Ticket } from "./types";
+import { Ticket, User } from "./types";
 import { MOCK_TICKETS } from "./constants";
 import api, { fetchCsrfToken } from "./lib/api";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -26,6 +28,17 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [tickets, setTickets] = useState<Ticket[]>(MOCK_TICKETS);
+
+  // Initialize user from localStorage to sync across tabs/reloads
+  const [user, setUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -54,6 +67,8 @@ function App() {
     }
   }, [location.pathname]);
 
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   // Authentication Flow Handlers
   const handleLogin = () => navigate("/dashboard");
   const handleVerify = () => navigate("/dashboard");
@@ -64,26 +79,59 @@ function App() {
       console.error("Logout error:", error);
     }
     localStorage.removeItem("user");
+    setUser(null);
     navigate("/login");
   };
 
   const MainLayout = ({ children }: { children: React.ReactNode }) => (
     <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark">
-      <Sidebar onLogout={handleLogout} />
+      <Sidebar
+        user={user}
+        onLogout={handleLogout}
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
       <div className="flex flex-1 flex-col overflow-hidden relative">
         <TopBar
           title={
             location.pathname === "/tickets" ? "Gestión de Tickets" : undefined
           }
+          onMenuClick={() => setMobileOpen(true)}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="h-full"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </main>
       </div>
+      <Toaster position="top-right" richColors />
     </div>
   );
 
   return (
     <Routes>
-      <Route path="/login" element={<Login onLogin={handleLogin} />} />
+      <Route
+        path="/login"
+        element={
+          <Login
+            onLogin={() => {
+              // Refresh user from localStorage after login
+              const saved = localStorage.getItem("user");
+              if (saved) setUser(JSON.parse(saved));
+              handleLogin();
+            }}
+          />
+        }
+      />
       <Route path="/2fa" element={<TwoFactor onVerify={handleVerify} />} />
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -137,7 +185,7 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
             <MainLayout>
-              <Settings />
+              <Settings user={user} onUpdateUser={handleUpdateUser} />
             </MainLayout>
           </ProtectedRoute>
         }

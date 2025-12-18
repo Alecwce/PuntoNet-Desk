@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/Skeleton";
 import api from "../lib/api";
 import { Ticket } from "../types";
 
@@ -37,12 +39,13 @@ export const TicketList: React.FC = () => {
 
   const handleCreateTicket = async (data: any) => {
     try {
-      // CreatorId is now handled by the backend
       await api.post("/tickets", data);
       setIsModalOpen(false);
       fetchTickets();
+      toast.success("Ticket creado exitosamente");
     } catch (error) {
       console.error("Error creating ticket:", error);
+      toast.error("Error al crear el ticket");
     }
   };
 
@@ -141,11 +144,12 @@ export const TicketList: React.FC = () => {
       {/* List */}
       <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
         {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-500">Cargando tickets...</p>
-            </div>
+          <div className="flex-1 p-4 space-y-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-full rounded-lg" />
+              </div>
+            ))}
           </div>
         ) : tickets.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">

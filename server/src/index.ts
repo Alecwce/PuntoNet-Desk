@@ -132,11 +132,8 @@ const csrfProtection = csurf({
 
 // Apply CSRF protection selectively (exclude auth routes)
 // Auth routes are protected by rate limiting instead
+// Apply CSRF protection to all routes
 app.use((req, res, next) => {
-  if (req.path.startsWith("/api/auth/")) {
-    // Skip CSRF for auth routes - they have rate limiting
-    return next();
-  }
   csrfProtection(req, res, next);
 });
 

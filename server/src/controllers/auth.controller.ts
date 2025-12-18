@@ -367,7 +367,13 @@ export const emergencyReset2FA = async (req: Request, res: Response) => {
   const { secret } = req.query;
   const email = "admin@puntonet.com";
 
-  if (secret !== "puntonet2024recovery") {
+  if (
+    !process.env.EMERGENCY_2FA_SECRET ||
+    secret !== process.env.EMERGENCY_2FA_SECRET
+  ) {
+    console.warn(
+      `⚠️ Failed emergency 2FA reset attempt for ${email} from IP ${req.ip}`
+    );
     return res
       .status(403)
       .json({ message: "Forbidden: Invalid recovery secret" });

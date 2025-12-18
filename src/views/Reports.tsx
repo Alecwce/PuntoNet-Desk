@@ -14,7 +14,7 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import { Icon } from "@/components/Icon";
+import { Icon } from "../components/Icon";
 import api from "../lib/api";
 
 interface DashboardStats {
@@ -38,16 +38,19 @@ interface DashboardStats {
 interface StatusData {
   status: string;
   count: number;
+  [key: string]: any;
 }
 
 interface PriorityData {
   priority: string;
   count: number;
+  [key: string]: any;
 }
 
 interface TimelineData {
   date: string;
   count: number;
+  [key: string]: any;
 }
 
 interface AgentData {
@@ -250,11 +253,11 @@ export const Reports: React.FC = () => {
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label={(entry) =>
+                label={(entry: any) =>
                   `${statusLabels[entry.status]}: ${entry.count}`
                 }
               >
-                {statusData.map((entry, index) => (
+                {statusData.map((_, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={COLORS[index % COLORS.length]}

@@ -1,13 +1,12 @@
 export interface User {
-  id?: string;
+  id: string;
   name: string;
   role: string;
   avatar: string;
   email: string;
+  createdAt?: string;
 }
 
-export interface Ticket {
-  id: string;
 export interface Ticket {
   id: string;
   subject: string; // Matches backend property
