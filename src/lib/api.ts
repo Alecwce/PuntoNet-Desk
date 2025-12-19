@@ -23,12 +23,9 @@ let csrfToken: string | null = null;
  */
 export const fetchCsrfToken = async () => {
   try {
-    const { data } = await axios.get(
-      `${API_URL.replace("/api", "")}/csrf-token`,
-      {
-        withCredentials: true,
-      }
-    );
+    const { data } = await axios.get(`${API_URL}/csrf-token`, {
+      withCredentials: true,
+    });
     csrfToken = data.csrfToken;
     if (import.meta.env.DEV) {
       console.log("✅ CSRF Token fetched");
