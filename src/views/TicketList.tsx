@@ -12,7 +12,16 @@ export const TicketList: React.FC = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { tickets, loading, refetch, setFilters, filters } = useTickets({
+  const {
+    tickets,
+    loading,
+    refetch,
+    setFilters,
+    filters,
+    page,
+    setPage,
+    totalPages,
+  } = useTickets({
     search: "",
     status: "all",
     priority: "all",
@@ -413,6 +422,31 @@ export const TicketList: React.FC = () => {
 
             {/* Mobile Floating Action Button (FAB) for creating tickets could go here if header button wasn't enough */}
           </>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && tickets.length > 0 && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Página {page} de {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(Math.max(1, page - 1))}
+                disabled={page === 1}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300"
+              >
+                Anterior
+              </button>
+              <button
+                onClick={() => setPage(Math.min(totalPages, page + 1))}
+                disabled={page === totalPages}
+                className="px-3 py-1 text-sm border rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
