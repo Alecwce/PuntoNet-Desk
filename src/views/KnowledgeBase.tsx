@@ -69,10 +69,34 @@ export const KnowledgeBase: React.FC = () => {
       if (categoryFilter !== "all") params.category = categoryFilter;
 
       const response = await api.get("/kb", { params });
-      setArticles(response.data);
+      // Parse tags from JSON string to array
+      const parsedArticles = response.data.map((article: any) => ({
+        ...article,
+        tags: parseTags(article.tags),
+      }));
+      setArticles(parsedArticles);
     } catch (error) {
       console.error("Error fetching articles:", error);
     }
+  };
+
+  // Helper to parse tags safely
+  const parseTags = (tags: any): string[] => {
+    if (!tags) return [];
+    if (Array.isArray(tags)) return tags;
+    if (typeof tags === "string") {
+      try {
+        const parsed = JSON.parse(tags);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        // If it's a comma-separated string
+        return tags
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean);
+      }
+    }
+    return [];
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -150,7 +174,7 @@ export const KnowledgeBase: React.FC = () => {
       title: article.title,
       content: article.content,
       category: article.category || "",
-      tags: article.tags.join(", "),
+      tags: Array.isArray(article.tags) ? article.tags.join(", ") : "",
       status: article.status,
     });
     setIsEditing(true);

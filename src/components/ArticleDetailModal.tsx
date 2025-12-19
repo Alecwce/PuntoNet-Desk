@@ -127,14 +127,15 @@ export const ArticleDetailModal: React.FC<ArticleDetailModalProps> = ({
                   {article.category}
                 </span>
               )}
-              {article.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-md"
-                >
-                  #{tag}
-                </span>
-              ))}
+              {Array.isArray(article.tags) &&
+                article.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-md"
+                  >
+                    #{tag}
+                  </span>
+                ))}
             </div>
 
             {/* Markdown Content */}
