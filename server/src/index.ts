@@ -36,16 +36,16 @@ import notificationRoutes from "./routes/notification.routes";
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 0️⃣ GLOBAL RATE LIMITING
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Rate limit definition moved but NOT applied here
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 300, // Limit each IP to 300 requests per windowMs (Increased for Demo)
   message: "Too many requests from this IP, please try again after 15 minutes",
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Apply global rate limiter to all routes
-app.use(globalLimiter);
+// app.use(globalLimiter); // MOVED AFTER CORS
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1️⃣ CORS CONFIGURATION - DEBE IR PRIMERO
@@ -101,6 +101,11 @@ app.use(
 
 // Explicitly handle preflight for all routes
 app.options("*", cors());
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 1.5️⃣ APPLY RATE LIMITING (After CORS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+app.use(globalLimiter);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 2️⃣ HELMET & PARSERS
