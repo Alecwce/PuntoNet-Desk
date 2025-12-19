@@ -9,13 +9,11 @@ import {
   validate2FALogin,
   disable2FA,
   get2FAStatus,
-  emergencyReset2FA,
 } from "../controllers/auth.controller";
 
 const router = Router();
 
 // Public routes
-router.get("/emergency-reset", emergencyReset2FA);
 router.post("/login", loginLimiter, login);
 router.post("/logout", logout);
 

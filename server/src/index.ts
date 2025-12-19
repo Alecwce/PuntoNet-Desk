@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 import path from "path";
 import csurf from "csurf";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
@@ -25,6 +26,20 @@ import clientRoutes from "./routes/client.routes";
 import reportsRoutes from "./routes/reports.routes";
 import searchRoutes from "./routes/search.routes";
 import notificationRoutes from "./routes/notification.routes";
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 0️⃣ GLOBAL RATE LIMITING
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: "Too many requests from this IP, please try again after 15 minutes",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply global rate limiter to all routes
+app.use(globalLimiter);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1️⃣ CORS CONFIGURATION - DEBE IR PRIMERO
@@ -65,24 +80,12 @@ app.use(
         return callback(null, true);
       }
 
-      // Check against whitelist
-      const isAllowed = allowedOrigins.some((allowed) => {
-        if (allowed.includes("*")) {
-          const pattern = allowed.replace("*.", "");
-          return origin.endsWith(pattern);
-        }
-        return origin === allowed;
-      });
-
-      // Explicitly allow any vercel.app subdomain (common for preview deployments)
-      // Using Regex for safer matching
-      const isVercelSubdomain = /https:\/\/.*\.vercel\.app$/.test(origin);
-
-      if (isAllowed || isVercelSubdomain) {
-        callback(null, true);
+      // Check against whitelist (STRICT MODE - NO WILDCARDS)
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
       } else {
         console.warn(`🚫 CORS BLOCKED: ${origin}`);
-        callback(null, false);
+        return callback(null, false);
       }
     },
     credentials: true,
@@ -131,8 +134,6 @@ const csrfProtection = csurf({
   },
 });
 
-// Apply CSRF protection selectively (exclude auth routes)
-// Auth routes are protected by rate limiting instead
 // Apply CSRF protection to all routes
 app.use((req, res, next) => {
   csrfProtection(req, res, next);

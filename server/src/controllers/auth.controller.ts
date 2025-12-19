@@ -81,9 +81,14 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // 5. Generate Token (No 2FA)
+    if (!process.env.JWT_SECRET) {
+      console.error("CRITICAL: JWT_SECRET not defined");
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
     const token = jwt.sign(
       { userId: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET || "default-secret-key",
+      process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
@@ -244,10 +249,11 @@ export const validate2FALogin = async (req: Request, res: Response) => {
     }
 
     try {
-      const decoded = jwt.verify(
-        tempToken,
-        process.env.JWT_SECRET || "default-secret-key"
-      ) as { userId: string; purpose: string };
+      if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET missing");
+      const decoded = jwt.verify(tempToken, process.env.JWT_SECRET) as {
+        userId: string;
+        purpose: string;
+      };
 
       if (decoded.purpose !== "2fa-validation" || decoded.userId !== userId) {
         return res.status(401).json({ message: "Token temporal inválido" });
@@ -277,10 +283,15 @@ export const validate2FALogin = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Código incorrecto" });
     }
 
+    if (!process.env.JWT_SECRET) {
+      console.error("CRITICAL: JWT_SECRET not defined");
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
     // 2FA verified - issue final JWT
     const finalToken = jwt.sign(
       { userId: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET || "default-secret-key",
+      process.env.JWT_SECRET,
       { expiresIn: "24h" }
     );
 
@@ -359,46 +370,5 @@ export const get2FAStatus = async (req: Request, res: Response) => {
   } catch (error) {
     console.error("❌ Error getting 2FA status:", error);
     res.status(500).json({ error: "Error al obtener estado 2FA" });
-  }
-};
-
-// Emergency 2FA Reset (Protected by secret)
-export const emergencyReset2FA = async (req: Request, res: Response) => {
-  const { secret } = req.query;
-  const email = "admin@puntonet.com";
-
-  if (
-    !process.env.EMERGENCY_2FA_SECRET ||
-    secret !== process.env.EMERGENCY_2FA_SECRET
-  ) {
-    console.warn(
-      `⚠️ Failed emergency 2FA reset attempt for ${email} from IP ${req.ip}`
-    );
-    return res
-      .status(403)
-      .json({ message: "Forbidden: Invalid recovery secret" });
-  }
-
-  try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      return res.status(404).json({ message: "Admin user not found" });
-    }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { isTwoFactorEnabled: false, twoFactorSecret: null },
-    });
-
-    console.log(
-      `🚨 Emergency 2FA reset performed for ${email} by IP ${req.ip}`
-    );
-    res.json({
-      message:
-        "Admin 2FA has been reset successfully. Please login immediately.",
-    });
-  } catch (error) {
-    console.error("Emergency reset error:", error);
-    res.status(500).json({ error: "Internal Server Error" });
   }
 };

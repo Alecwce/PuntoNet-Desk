@@ -67,6 +67,8 @@ export const getTickets = async (req: Request, res: Response) => {
 
 export const getTicketById = async (req: Request, res: Response) => {
   const { id } = req.params;
+  const user = (req as any).user;
+
   try {
     const ticket = await prisma.ticket.findUnique({
       where: { id },
@@ -80,9 +82,18 @@ export const getTicketById = async (req: Request, res: Response) => {
         attachments: true,
       },
     });
+
     if (!ticket) {
       return res.status(404).json({ error: "Ticket not found" });
     }
+
+    // RBAC: Check authorization
+    if (user.role === "CLIENT" && ticket.creatorId !== user.id) {
+      return res
+        .status(403)
+        .json({ error: "Forbidden: You cannot access this ticket" });
+    }
+
     res.json(ticket);
   } catch (error) {
     console.error("Error fetching ticket:", error);

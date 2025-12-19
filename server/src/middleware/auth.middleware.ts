@@ -24,10 +24,12 @@ export const authenticate = async (
     }
 
     // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "default-secret-key"
-    ) as TokenPayload;
+    if (!process.env.JWT_SECRET) {
+      console.error("CRITICAL: JWT_SECRET not defined");
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as TokenPayload;
 
     if (!decoded || !decoded.userId) {
       return res.status(401).json({ message: "Token inválido" });
