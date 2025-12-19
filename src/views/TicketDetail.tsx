@@ -7,6 +7,7 @@ import { Ticket } from "../types";
 import { KBSection } from "@/components/KBSection";
 import { exportTicketToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
+import { FileUploadDropzone } from "@/components/FileUploadDropzone";
 
 export const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -16,6 +17,22 @@ export const TicketDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState("activity");
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    if (!ticketId || !newMessage) return;
+    const timer = setTimeout(() => {
+      localStorage.setItem(`draft-ticket-${ticketId}`, newMessage);
+    }, 1000); // Debounce 1 second
+    return () => clearTimeout(timer);
+  }, [newMessage, ticketId]);
+
+  // Restore draft on mount
+  useEffect(() => {
+    if (!ticketId) return;
+    const draft = localStorage.getItem(`draft-ticket-${ticketId}`);
+    if (draft) setNewMessage(draft);
+  }, [ticketId]);
 
   const userStr = localStorage.getItem("user");
   const user = userStr ? JSON.parse(userStr) : null;
@@ -67,6 +84,8 @@ export const TicketDetail: React.FC = () => {
         senderId,
       });
       setNewMessage("");
+      // Clear draft from localStorage
+      localStorage.removeItem(`draft-ticket-${ticket.id}`);
       toast.success("Mensaje enviado");
       fetchTicket(); // Refresh to show new message
     } catch (error) {

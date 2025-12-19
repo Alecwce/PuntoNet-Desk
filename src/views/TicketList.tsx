@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
@@ -8,10 +8,19 @@ import { Select } from "@/components/ui/Select";
 import api from "../lib/api";
 import { useTickets } from "../hooks/useTickets";
 import { formatRelativeDate } from "../lib/dateUtils";
+import { exportTicketsToExcel } from "../lib/excelExport";
 
 export const TicketList: React.FC = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Initialize filters from localStorage
+  const getInitialFilters = () => {
+    const saved = localStorage.getItem("ticket-filters");
+    return saved
+      ? JSON.parse(saved)
+      : { search: "", status: "all", priority: "all" };
+  };
 
   const {
     tickets,
@@ -22,11 +31,12 @@ export const TicketList: React.FC = () => {
     page,
     setPage,
     totalPages,
-  } = useTickets({
-    search: "",
-    status: "all",
-    priority: "all",
-  });
+  } = useTickets(getInitialFilters());
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem("ticket-filters", JSON.stringify(filters));
+  }, [filters]);
 
   // Parse user role
   const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -104,13 +114,23 @@ export const TicketList: React.FC = () => {
             {tickets.length} tickets encontrados
           </p>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
-        >
-          <Icon name="add" />
-          <span>Nuevo Ticket</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => exportTicketsToExcel(tickets)}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            title="Exportar a Excel"
+          >
+            <Icon name="download" />
+            <span className="hidden sm:inline">Exportar Excel</span>
+          </button>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+          >
+            <Icon name="add" />
+            <span>Nuevo Ticket</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
