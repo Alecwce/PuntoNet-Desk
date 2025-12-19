@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "./Icon";
 import { useNotifications, Notification } from "../hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
-import { cn } from "../lib/utils"; // Assuming cn utility exists, usually does in modern setups
+import { cn } from "../lib/utils";
+import { formatRelativeDate } from "../lib/dateUtils";
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -155,7 +156,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                         {notification.message}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-2">
-                        {new Date(notification.createdAt).toLocaleString()}
+                        {formatRelativeDate(notification.createdAt)}
                       </p>
                     </div>
                     {!notification.isRead && (

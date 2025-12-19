@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { Select } from "@/components/ui/Select";
 import api from "../lib/api";
 import { useTickets } from "../hooks/useTickets";
+import { formatRelativeDate } from "../lib/dateUtils";
 
 export const TicketList: React.FC = () => {
   const navigate = useNavigate();

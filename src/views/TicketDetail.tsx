@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { Ticket } from "../types";
 import { KBSection } from "@/components/KBSection";
 import { exportTicketToPDF } from "@/lib/pdfExport";
+import { toast } from "sonner";
 
 export const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -28,6 +29,7 @@ export const TicketDetail: React.FC = () => {
       setTicket(response.data);
     } catch (error) {
       console.error("Error fetching ticket:", error);
+      toast.error("Error al cargar el ticket");
     } finally {
       setLoading(false);
     }
@@ -65,9 +67,11 @@ export const TicketDetail: React.FC = () => {
         senderId,
       });
       setNewMessage("");
+      toast.success("Mensaje enviado");
       fetchTicket(); // Refresh to show new message
     } catch (error) {
       console.error("Error sending message:", error);
+      toast.error("Error al enviar mensaje");
     }
   };
 
@@ -76,8 +80,10 @@ export const TicketDetail: React.FC = () => {
     try {
       await api.put(`/tickets/${ticket.id}`, { status: newStatus });
       setTicket({ ...ticket, status: newStatus as any });
+      toast.success("Estado actualizado");
     } catch (error) {
       console.error("Error updating status:", error);
+      toast.error("Error al actualizar estado");
     }
   };
 
@@ -86,8 +92,10 @@ export const TicketDetail: React.FC = () => {
     try {
       await api.put(`/tickets/${ticket.id}`, { priority: newPriority });
       setTicket({ ...ticket, priority: newPriority as any });
+      toast.success("Prioridad actualizada");
     } catch (error) {
       console.error("Error updating priority:", error);
+      toast.error("Error al actualizar prioridad");
     }
   };
 
@@ -442,9 +450,11 @@ export const TicketDetail: React.FC = () => {
                                 },
                               }
                             );
+                            toast.success("Archivo subido correctamente");
                             fetchTicket(); // Refresh list
                           } catch (error) {
                             console.error("Error uploading:", error);
+                            toast.error("Error al subir archivo");
                           }
                         }
                       }}
