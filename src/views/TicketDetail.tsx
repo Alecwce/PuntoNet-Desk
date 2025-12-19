@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Icon } from "../components/Icon";
+import { Icon } from "@/components/Icon";
 import { Select } from "@/components/ui/Select";
 import api from "@/lib/api";
-import { Ticket } from "../types";
+import confetti from "canvas-confetti";
+import { Ticket, TicketMessage } from "../types";
 import { KBSection } from "@/components/KBSection";
 import { exportTicketToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
 import { FileUploadDropzone } from "@/components/FileUploadDropzone";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { analyzeSentiment } from "../lib/sentiment";
 
 export const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -99,8 +101,19 @@ export const TicketDetail: React.FC = () => {
     if (!ticket) return;
     try {
       await api.put(`/tickets/${ticket.id}`, { status: newStatus });
-      setTicket({ ...ticket, status: newStatus as any });
-      toast.success("Estado actualizado");
+      setTicket((prev) => (prev ? { ...prev, status: newStatus } : null));
+
+      if (newStatus === "RESOLVED") {
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#22c55e", "#3b82f6", "#f59e0b", "#ef4444"], // Corporate colors
+        });
+        toast.success("¡Excelente trabajo! Ticket resuelto 🎉");
+      } else {
+        toast.success("Estado actualizado correctamente");
+      }
     } catch (error) {
       console.error("Error updating status:", error);
       toast.error("Error al actualizar estado");
@@ -346,9 +359,27 @@ export const TicketDetail: React.FC = () => {
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                       Cliente
                     </span>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {(ticket as any).creator?.name || "Desconocido"}
-                    </p>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                        {(ticket as any).creator?.name || "Desconocido"}
+                      </span>
+                      {/* Sentiment Badge */}
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${
+                          analyzeSentiment(ticket.description || ticket.subject)
+                            .color
+                        }`}
+                        title={`Sentimiento: ${
+                          analyzeSentiment(ticket.description || ticket.subject)
+                            .label
+                        }`}
+                      >
+                        {
+                          analyzeSentiment(ticket.description || ticket.subject)
+                            .emoji
+                        }
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">

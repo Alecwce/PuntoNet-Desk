@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 import { User } from "../types";
+import { CommandPalette } from "./CommandPalette";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark">
+      <CommandPalette />
       <Sidebar
         user={user}
         onLogout={onLogout}

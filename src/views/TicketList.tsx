@@ -10,6 +10,7 @@ import { useTickets } from "../hooks/useTickets";
 import { formatRelativeDate } from "../lib/dateUtils";
 import { exportTicketsToExcel } from "../lib/excelExport";
 import { calculateSLA } from "../lib/slaUtils";
+import { analyzeSentiment } from "../lib/sentiment";
 
 export const TicketList: React.FC = () => {
   const navigate = useNavigate();
@@ -290,8 +291,22 @@ export const TicketList: React.FC = () => {
 
                             <div className="pl-2">
                               {/* Subject */}
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-primary transition-colors flex items-center gap-1">
                                 {ticket.subject}
+                                <span
+                                  title={`Sentimiento: ${
+                                    analyzeSentiment(
+                                      ticket.description || ticket.subject
+                                    ).label
+                                  }`}
+                                  className="text-[10px]"
+                                >
+                                  {
+                                    analyzeSentiment(
+                                      ticket.description || ticket.subject
+                                    ).emoji
+                                  }
+                                </span>
                               </h4>
 
                               {/* Description Snippet */}
@@ -411,8 +426,22 @@ export const TicketList: React.FC = () => {
                       >
                         <td className="p-4">
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                            <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors flex items-center gap-2">
                               {ticket.subject}
+                              <span
+                                title={`Sentimiento: ${
+                                  analyzeSentiment(
+                                    ticket.description || ticket.subject
+                                  ).label
+                                }`}
+                                className="text-xs"
+                              >
+                                {
+                                  analyzeSentiment(
+                                    ticket.description || ticket.subject
+                                  ).emoji
+                                }
+                              </span>
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">
                               {ticket.description}
