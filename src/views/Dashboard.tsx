@@ -250,22 +250,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
             Actividad Reciente
           </h3>
           <div className="h-[300px] w-full min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#1F2937",
-                    border: "none",
-                    borderRadius: "0.5rem",
-                    color: "#fff",
-                  }}
-                />
-                <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#1F2937",
+                      border: "none",
+                      borderRadius: "0.5rem",
+                      color: "#fff",
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-400">
+                <p className="text-sm">No hay datos disponibles</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
