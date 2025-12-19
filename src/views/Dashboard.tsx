@@ -209,7 +209,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-6">
             Actividad Reciente
           </h3>
-          <div style={{ height: 300, width: "100%" }}>
+          <div className="h-[300px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />

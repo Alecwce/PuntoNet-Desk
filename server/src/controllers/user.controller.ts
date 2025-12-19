@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import bcrypt from "bcryptjs";
 
 export const createUser = async (req: Request, res: Response) => {
   const { name, email, password, role, avatar } = req.body;
@@ -16,11 +17,13 @@ export const createUser = async (req: Request, res: Response) => {
         .json({ error: "User with this email already exists" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password, // In production, hash this!
+        password: hashedPassword,
         role: role || "CLIENT",
         avatar: avatar || null,
       },
@@ -67,7 +70,7 @@ export const updateUser = async (req: Request, res: Response) => {
   try {
     const updateData: any = { name, email, role, avatar };
     if (password) {
-      updateData.password = password; // In production, hash this!
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     const user = await prisma.user.update({
@@ -95,7 +98,7 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     const updateData: any = { name, avatar };
     if (password) {
-      updateData.password = password; // In production, hash this!
+      updateData.password = await bcrypt.hash(password, 10);
     }
 
     const user = await prisma.user.update({
