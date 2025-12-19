@@ -153,12 +153,30 @@ export const TicketList: React.FC = () => {
           </div>
         ) : tickets.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
-            <Icon name="inbox" className="text-6xl mb-4" />
-            <p className="text-lg">No se encontraron tickets</p>
+            <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-full mb-4">
+              <Icon
+                name="inbox"
+                className="text-4xl text-gray-300 dark:text-gray-600"
+              />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+              No hay tickets
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs text-center mt-1 mb-6">
+              No se encontraron tickets con los filtros actuales o aún no has
+              creado ninguno.
+            </p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <Icon name="add" />
+              <span>Crear nuevo ticket</span>
+            </button>
           </div>
         ) : (
-          <div className="overflow-y-auto flex-1">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-y-auto flex-1 overflow-x-auto min-w-full">
+            <table className="w-full text-left border-collapse min-w-[800px]">
               <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0 z-10">
                 <tr>
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
@@ -187,7 +205,7 @@ export const TicketList: React.FC = () => {
                 {currentTickets.map((ticket) => (
                   <tr
                     key={ticket.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors group"
+                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 cursor-pointer transition-colors group"
                   >
                     <td
                       className="p-4"
@@ -264,7 +282,11 @@ export const TicketList: React.FC = () => {
                       className="p-4 text-sm text-gray-500 dark:text-gray-400"
                       onClick={() => navigate(`/tickets/${ticket.id}`)}
                     >
-                      {new Date(ticket.createdAt).toLocaleDateString()}
+                      {new Date(ticket.createdAt).toLocaleDateString("es-ES", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
                     </td>
                     {/* DELETE BUTTON FOR ADMIN */}
                     {loggedInUser?.role === "ADMIN" && (
@@ -276,6 +298,7 @@ export const TicketList: React.FC = () => {
                           }}
                           className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                           title="Eliminar ticket"
+                          aria-label="Eliminar ticket"
                         >
                           <Icon name="delete" className="text-lg" />
                         </button>
