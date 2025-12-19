@@ -4,11 +4,11 @@ import { Icon } from "@/components/Icon";
 import { Select } from "@/components/ui/Select";
 import api from "@/lib/api";
 import confetti from "canvas-confetti";
-import { Ticket, TicketMessage } from "../types";
+import { Ticket } from "../types";
 import { KBSection } from "@/components/KBSection";
 import { exportTicketToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
-import { FileUploadDropzone } from "@/components/FileUploadDropzone";
+
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { analyzeSentiment } from "../lib/sentiment";
 
