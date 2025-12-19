@@ -3,14 +3,9 @@ import { prisma } from "../index";
 import { Prisma } from "@prisma/client";
 
 export const getArticles = async (req: Request, res: Response) => {
-  const { search, category } = req.query;
+  const { search } = req.query;
   try {
     const where: Prisma.KnowledgeBaseWhereInput = {};
-
-    // Category filter
-    if (category && String(category) !== "all") {
-      where.category = String(category);
-    }
 
     // Search filter
     if (search) {
@@ -24,7 +19,6 @@ export const getArticles = async (req: Request, res: Response) => {
             mode: "insensitive" as const,
           },
         },
-        { tags: { has: String(search) } },
       ];
     }
 
@@ -50,14 +44,12 @@ export const getArticles = async (req: Request, res: Response) => {
 };
 
 export const createArticle = async (req: Request, res: Response) => {
-  const { title, content, category, tags, status, authorId } = req.body;
+  const { title, content, status, authorId } = req.body;
   try {
     const article = await prisma.knowledgeBase.create({
       data: {
         title,
         content,
-        category,
-        tags: tags || [],
         status: status || "PUBLISHED",
         authorId,
       },
@@ -122,7 +114,7 @@ export const getArticleById = async (req: Request, res: Response) => {
 
 export const updateArticle = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { title, content, category, tags, status } = req.body;
+  const { title, content, status } = req.body;
 
   try {
     const article = await prisma.knowledgeBase.update({
@@ -130,8 +122,6 @@ export const updateArticle = async (req: Request, res: Response) => {
       data: {
         title,
         content,
-        category,
-        tags,
         status,
       },
       include: {

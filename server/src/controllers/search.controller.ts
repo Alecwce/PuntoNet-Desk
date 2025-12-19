@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { prisma } from "../lib/prisma";
+import { prisma } from "../index";
 
 /**
  * Global search across tickets, users, and knowledge base
