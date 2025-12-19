@@ -6,10 +6,6 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-import { Toaster } from "sonner";
-import { AnimatePresence, motion } from "framer-motion";
-import { Sidebar } from "./components/Sidebar";
-import { TopBar } from "./components/TopBar";
 import { Login } from "./views/Login";
 import { TwoFactor } from "./views/TwoFactor";
 import { Dashboard } from "./views/Dashboard";
@@ -23,6 +19,7 @@ import { KnowledgeBase } from "./views/KnowledgeBase";
 import { Settings } from "./views/Settings";
 import { Clients } from "./views/Clients";
 import { Reports } from "./views/Reports";
+import { MainLayout } from "./components/MainLayout";
 
 function App() {
   const navigate = useNavigate();
@@ -67,8 +64,6 @@ function App() {
     }
   }, [location.pathname]);
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   // Authentication Flow Handlers
   const handleLogin = () => navigate("/dashboard");
   const handleVerify = () => navigate("/dashboard");
@@ -82,40 +77,6 @@ function App() {
     setUser(null);
     navigate("/login");
   };
-
-  const MainLayout = ({ children }: { children: React.ReactNode }) => (
-    <div className="flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark">
-      <Sidebar
-        user={user}
-        onLogout={handleLogout}
-        mobileOpen={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-      />
-      <div className="flex flex-1 flex-col overflow-hidden relative">
-        <TopBar
-          title={
-            location.pathname === "/tickets" ? "Gestión de Tickets" : undefined
-          }
-          onMenuClick={() => setMobileOpen(true)}
-        />
-        <main className="flex-1 overflow-y-auto p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="h-full"
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </div>
-      <Toaster position="top-right" richColors />
-    </div>
-  );
 
   return (
     <Routes>
@@ -140,7 +101,7 @@ function App() {
         path="/dashboard"
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <Dashboard tickets={tickets} onRefresh={fetchTickets} />
             </MainLayout>
           </ProtectedRoute>
@@ -151,7 +112,7 @@ function App() {
         path="/tickets"
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <TicketList />
             </MainLayout>
           </ProtectedRoute>
@@ -162,7 +123,7 @@ function App() {
         path="/tickets/:ticketId"
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <TicketDetail />
             </MainLayout>
           </ProtectedRoute>
@@ -173,7 +134,7 @@ function App() {
         path="/kb"
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <KnowledgeBase />
             </MainLayout>
           </ProtectedRoute>
@@ -184,7 +145,7 @@ function App() {
         path="/settings"
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <Settings user={user} onUpdateUser={handleUpdateUser} />
             </MainLayout>
           </ProtectedRoute>
@@ -195,7 +156,7 @@ function App() {
         path="/clients"
         element={
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <Clients />
             </MainLayout>
           </ProtectedRoute>
@@ -206,7 +167,7 @@ function App() {
         path="/reports"
         element={
           <ProtectedRoute allowedRoles={["ADMIN"]}>
-            <MainLayout>
+            <MainLayout user={user} onLogout={handleLogout}>
               <Reports />
             </MainLayout>
           </ProtectedRoute>
