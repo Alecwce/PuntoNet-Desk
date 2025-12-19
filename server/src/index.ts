@@ -123,8 +123,12 @@ const csrfProtection = csurf({
   },
 });
 
-// Apply CSRF protection to all routes
+// FIX: Apply CSRF protection to all routes EXCEPT auth endpoints
 app.use((req, res, next) => {
+  // Skip CSRF for auth routes (/api/auth/*)
+  if (req.path.startsWith("/api/auth/")) {
+    return next();
+  }
   csrfProtection(req, res, next);
 });
 
