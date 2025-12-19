@@ -3,6 +3,7 @@ import api from "../lib/api";
 import { User } from "../types";
 
 import { TwoFactorSetup } from "../components/TwoFactorSetup";
+import { toast } from "sonner";
 
 interface UserFormData {
   name: string;
@@ -93,7 +94,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
       profileData.password &&
       profileData.password !== profileData.confirmPassword
     ) {
-      alert("Las contraseñas no coinciden");
+      toast.error("Las contraseñas no coinciden");
       return;
     }
 
@@ -104,7 +105,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
         avatar: profileData.avatar,
         password: profileData.password || undefined,
       });
-      alert("Perfil actualizado correctamente");
+      toast.success("Perfil actualizado correctamente");
 
       // Sync with App state
       onUpdateUser({
@@ -116,20 +117,20 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
       setProfileData({ ...profileData, password: "", confirmPassword: "" });
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert("Error al actualizar el perfil");
+      toast.error("Error al actualizar el perfil");
     }
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userFormData.name || !userFormData.email || !userFormData.password) {
-      alert("Por favor completa todos los campos obligatorios");
+      toast.error("Por favor completa todos los campos obligatorios");
       return;
     }
 
     try {
       await api.post("/users", userFormData);
-      alert("Usuario creado correctamente");
+      toast.success("Usuario creado correctamente");
       setIsCreateModalOpen(false);
       setUserFormData({
         name: "",
@@ -141,7 +142,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
       fetchUsers();
     } catch (error: any) {
       console.error("Error creating user:", error);
-      alert(error.response?.data?.error || "Error al crear usuario");
+      toast.error(error.response?.data?.error || "Error al crear usuario");
     }
   };
 
@@ -157,7 +158,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
         avatar: userFormData.avatar || null,
         password: userFormData.password || undefined,
       });
-      alert("Usuario actualizado correctamente");
+      toast.success("Usuario actualizado correctamente");
       setIsEditModalOpen(false);
       setUserToEdit(null);
       setUserFormData({
@@ -170,7 +171,7 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
       fetchUsers();
     } catch (error: any) {
       console.error("Error updating user:", error);
-      alert(error.response?.data?.error || "Error al actualizar usuario");
+      toast.error(error.response?.data?.error || "Error al actualizar usuario");
     }
   };
 
@@ -196,13 +197,13 @@ export const Settings: React.FC<SettingsProps> = ({ user, onUpdateUser }) => {
 
     try {
       await api.delete(`/users/${userToDelete}`);
-      alert("Usuario eliminado correctamente");
+      toast.success("Usuario eliminado correctamente");
       fetchUsers();
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
     } catch (error: any) {
       console.error("Error deleting user:", error);
-      alert(
+      toast.error(
         `Error al eliminar usuario: ${
           error.response?.data?.error || error.message
         }`

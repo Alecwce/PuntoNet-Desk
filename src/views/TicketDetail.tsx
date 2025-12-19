@@ -213,6 +213,48 @@ export const TicketDetail: React.FC = () => {
                   {(ticket as any).description || "Sin descripción"}
                 </p>
 
+                {/* Mobile-only Ticket Info (Hidden on XL screens where Sidebar is visible) */}
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg xl:hidden space-y-4 border border-gray-200 dark:border-gray-700">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">
+                    Información del Ticket
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-xs font-medium text-gray-500 uppercase">
+                        Asignado a
+                      </span>
+                      <div className="mt-1 flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px]">
+                          {(ticket.assignee as any)?.name?.charAt(0) || "?"}
+                        </div>
+                        <span className="text-sm text-gray-900 dark:text-white">
+                          {(ticket.assignee as any)?.name || "Sin asignar"}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-gray-500 uppercase">
+                        Creado
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {new Date((ticket as any).createdAt).toLocaleDateString(
+                          "es-ES"
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-gray-500 uppercase">
+                        Actualizado
+                      </span>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {new Date((ticket as any).updatedAt).toLocaleDateString(
+                          "es-ES"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="mt-6 grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -238,32 +280,38 @@ export const TicketDetail: React.FC = () => {
               <div className="flex flex-col h-full">
                 <div className="flex-1 space-y-4 mb-4">
                   {ticket.messages && ticket.messages.length > 0 ? (
-                    ticket.messages.map((msg: any) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${
-                          msg.senderId === "current-user-id"
-                            ? "justify-end"
-                            : "justify-start"
-                        }`}
-                      >
+                    ticket.messages.map((msg: any) => {
+                      const currentUserStr = localStorage.getItem("user");
+                      const currentUser = currentUserStr
+                        ? JSON.parse(currentUserStr)
+                        : {};
+                      const isMe = msg.senderId === currentUser.id;
+
+                      return (
                         <div
-                          className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                            msg.senderId === "current-user-id"
-                              ? "bg-primary text-white"
-                              : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                          key={msg.id}
+                          className={`flex ${
+                            isMe ? "justify-end" : "justify-start"
                           }`}
                         >
-                          <p className="text-sm">{msg.content}</p>
-                          <span className="text-xs opacity-70 mt-1 block">
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
+                          <div
+                            className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                              isMe
+                                ? "bg-primary text-white"
+                                : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
+                            }`}
+                          >
+                            <p className="text-sm">{msg.content}</p>
+                            <span className="text-xs opacity-70 mt-1 block">
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-center text-gray-400 text-sm py-10">
                       No hay mensajes aún.
