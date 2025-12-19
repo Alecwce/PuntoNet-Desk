@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
 import api from "@/lib/api";
 
@@ -16,6 +17,7 @@ interface KBSectionProps {
 }
 
 export const KBSection: React.FC<KBSectionProps> = ({ ticketId }) => {
+  const navigate = useNavigate();
   const [articles, setArticles] = useState<KBArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,6 +69,11 @@ export const KBSection: React.FC<KBSectionProps> = ({ ticketId }) => {
     return date.toLocaleDateString("es-ES");
   };
 
+  const handleArticleClick = (articleId: string) => {
+    // Navigate to KB page (in-app navigation)
+    navigate("/kb");
+  };
+
   return (
     <div className="space-y-6">
       <div className="relative">
@@ -96,7 +103,7 @@ export const KBSection: React.FC<KBSectionProps> = ({ ticketId }) => {
               <div
                 key={article.id}
                 className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
-                onClick={() => window.open(`/kb/${article.id}`, "_blank")}
+                onClick={() => handleArticleClick(article.id)}
               >
                 <h5 className="text-primary font-medium text-sm group-hover:underline">
                   {article.title}
