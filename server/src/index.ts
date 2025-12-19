@@ -10,9 +10,14 @@ import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
+import compression from "compression";
+
 const app = express();
 // Enable trust proxy for Vercel/Railway
 app.set("trust proxy", 1);
+
+// Enable GZIP compression
+app.use(compression());
 
 const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;

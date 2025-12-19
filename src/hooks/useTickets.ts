@@ -37,9 +37,14 @@ export const useTickets = (initialFilters: UseTicketsFilters = {}) => {
     }
   }, [filters]);
 
+  // Debounce search
   useEffect(() => {
-    fetchTickets();
-  }, [fetchTickets]);
+    const timer = setTimeout(() => {
+      fetchTickets();
+    }, 500); // Wait 500ms after last change
+
+    return () => clearTimeout(timer);
+  }, [filters, fetchTickets]);
 
   const updateFilters = (newFilters: Partial<UseTicketsFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
