@@ -42,9 +42,16 @@ export const CommandPalette = () => {
           const { data } = await api.get(
             `/search?q=${encodeURIComponent(query)}`
           );
-          setResults(data);
+          // Defensive: Ensure all properties are arrays even if API returns undefined
+          setResults({
+            tickets: data?.tickets || [],
+            users: data?.users || [],
+            articles: data?.articles || [],
+          });
         } catch (error) {
           console.error("Search failed", error);
+          // Reset to empty arrays on error
+          setResults({ tickets: [], users: [], articles: [] });
         } finally {
           setLoading(false);
         }
