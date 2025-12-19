@@ -9,10 +9,12 @@ import api from "../lib/api";
 import { useTickets } from "../hooks/useTickets";
 import { formatRelativeDate } from "../lib/dateUtils";
 import { exportTicketsToExcel } from "../lib/excelExport";
+import { calculateSLA } from "../lib/slaUtils";
 
 export const TicketList: React.FC = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isKanbanView, setIsKanbanView] = useState(false);
 
   // Initialize filters from localStorage
   const getInitialFilters = () => {
@@ -116,6 +118,20 @@ export const TicketList: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={() => setIsKanbanView(!isKanbanView)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors border ${
+              isKanbanView
+                ? "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800"
+                : "bg-white text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
+            }`}
+            title="Cambiar vista"
+          >
+            <Icon name={isKanbanView ? "list" : "grid_view"} />
+            <span className="hidden sm:inline">
+              {isKanbanView ? "Lista" : "Tablero"}
+            </span>
+          </button>
+          <button
             onClick={() => exportTicketsToExcel(tickets)}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             title="Exportar a Excel"
@@ -208,8 +224,113 @@ export const TicketList: React.FC = () => {
         </div>
       </div>
 
-      {/* List */}
-      <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
+      {/* View Content */}
+      {isKanbanView ? (
+        <div className="flex-1 overflow-x-auto pb-4">
+          <div className="flex gap-4 h-full min-w-[1200px] px-1">
+            {(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const).map(
+              (status) => {
+                const columnTickets = tickets.filter((t) => t.status === status);
+                const statusStyles = {
+                  OPEN: "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30",
+                  IN_PROGRESS: "bg-yellow-50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/30",
+                  RESOLVED: "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30",
+                  CLOSED: "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700",
+                };
+
+                const titles = {
+                  OPEN: "Abierto",
+                  IN_PROGRESS: "En Progreso",
+                  RESOLVED: "Resuelto",
+                  CLOSED: "Cerrado",
+                };
+
+                return (
+                  <div
+                    key={status}
+                    className={`flex-1 rounded-xl border flex flex-col ${statusStyles[status]}`}
+                  >
+                    {/* Column Header */}
+                    <div className="p-3 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-t-xl">
+                      <h3 className="font-semibold text-gray-700 dark:text-gray-200">
+                        {titles[status]}
+                      </h3>
+                      <span className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 shadow-sm">
+                        {columnTickets.length}
+                      </span>
+                    </div>
+
+                    {/* Column Content */}
+                    <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+                      {columnTickets.map((ticket) => {
+                        const sla = calculateSLA(ticket);
+                        return (
+                          <div
+                            key={ticket.id}
+                            onClick={() => navigate(`/tickets/${ticket.id}`)}
+                            className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                          >
+                            {/* Priority Stripe */}
+                            <div
+                              className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                ticket.priority === "CRITICAL"
+                                  ? "bg-red-500"
+                                  : ticket.priority === "HIGH"
+                                  ? "bg-orange-500"
+                                  : ticket.priority === "MEDIUM"
+                                  ? "bg-yellow-500"
+                                  : "bg-blue-500"
+                              }`}
+                            />
+
+                            <div className="pl-2">
+                              {/* Subject */}
+                              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                                {ticket.subject}
+                              </h4>
+
+                              {/* Description Snippet */}
+                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+                                {ticket.description}
+                              </p>
+
+                              {/* Footer: User & SLA */}
+                              <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700/50 pt-2">
+                                <div className="flex items-center gap-1.5">
+                                  <div
+                                    className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
+                                    style={{
+                                      backgroundImage: `url("https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                        ticket.client?.name || "U"
+                                      )}&background=random")`,
+                                    }}
+                                  />
+                                  <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate max-w-[80px]">
+                                    {ticket.client?.name || "Usuario"}
+                                  </span>
+                                </div>
+                                
+                                {/* SLA Badge */}
+                                {status !== "CLOSED" && status !== "RESOLVED" && (
+                                  <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${sla.color}`}>
+                                    <Icon name="schedule" className="text-[10px]" />
+                                    <span>{sla.label.split(' ')[0]}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              }
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
         {loading ? (
           <div className="flex-1 p-4 space-y-4">
             {[...Array(5)].map((_, i) => (
@@ -337,14 +458,23 @@ export const TicketList: React.FC = () => {
                         </div>
                       </td>
                       <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(ticket.createdAt).toLocaleDateString(
-                          "es-ES",
-                          {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          }
-                        )}
+                        <div className="flex flex-col gap-1">
+                          <span>
+                            {new Date(ticket.createdAt).toLocaleDateString("es-ES", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })}
+                          </span>
+                          {ticket.status !== "CLOSED" && ticket.status !== "RESOLVED" && (
+                            <span 
+                              className={`text-[10px] px-1.5 py-0.5 rounded w-fit text-white ${calculateSLA(ticket).color}`}
+                              title={calculateSLA(ticket).label}
+                            >
+                              {calculateSLA(ticket).label.split('(')[0]}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       {loggedInUser?.role === "ADMIN" && (
                         <td className="p-4 text-right">
@@ -444,6 +574,8 @@ export const TicketList: React.FC = () => {
             {/* Mobile Floating Action Button (FAB) for creating tickets could go here if header button wasn't enough */}
           </>
         )}
+      </div>
+      )}
 
         {/* Pagination Controls */}
         {!loading && tickets.length > 0 && (
