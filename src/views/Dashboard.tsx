@@ -15,6 +15,7 @@ import { motion } from "framer-motion";
 import { Ticket } from "../types";
 import { Icon } from "../components/Icon";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LegalPoliciesModal } from "../components/LegalPoliciesModal";
 
 interface DashboardProps {
   tickets: Ticket[];
@@ -35,6 +36,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
   });
 
   const [chartData, setChartData] = React.useState<any[]>([]);
+
+  // Legal Policies State
+  const [isLegalModalOpen, setIsLegalModalOpen] = React.useState(false);
+  const [hasAcceptedPolicies, setHasAcceptedPolicies] = React.useState(true);
+
+  React.useEffect(() => {
+    const accepted = localStorage.getItem("policiesAccepted_v1");
+    if (!accepted) {
+      setHasAcceptedPolicies(false);
+      // Optional: Auto-open or just show indicator
+      // setIsLegalModalOpen(true);
+    } else {
+      setHasAcceptedPolicies(true);
+    }
+  }, []);
+
+  const handleAcceptPolicies = () => {
+    localStorage.setItem("policiesAccepted_v1", "true");
+    setHasAcceptedPolicies(true);
+    setIsLegalModalOpen(false);
+  };
 
   React.useEffect(() => {
     const fetchStats = async () => {
@@ -118,16 +140,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
       transition={{ duration: 0.5 }}
       className="p-8 space-y-8"
     >
+      <LegalPoliciesModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+        onAccept={!hasAcceptedPolicies ? handleAcceptPolicies : undefined}
+      />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
             Dashboard
+            {!hasAcceptedPolicies && (
+              <span
+                className="ml-3 text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full animate-pulse cursor-pointer border border-red-200"
+                onClick={() => setIsLegalModalOpen(true)}
+              >
+                Políticas Pendientes
+              </span>
+            )}
           </h2>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             Resumen general del servicio
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsLegalModalOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700 transition-colors shadow-sm"
+          >
+            <Icon name="gavel" className="text-primary" />
+            <span className="hidden sm:inline">Legal</span>
+          </button>
           {onRefresh && (
             <button
               onClick={onRefresh}
