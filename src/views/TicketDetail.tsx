@@ -8,6 +8,7 @@ import { KBSection } from "@/components/KBSection";
 import { exportTicketToPDF } from "@/lib/pdfExport";
 import { toast } from "sonner";
 import { FileUploadDropzone } from "@/components/FileUploadDropzone";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 export const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -386,7 +387,10 @@ export const TicketDetail: React.FC = () => {
                                 : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white"
                             }`}
                           >
-                            <p className="text-sm">{msg.content}</p>
+                            <MarkdownRenderer
+                              content={msg.content}
+                              className={isMe ? "text-white" : ""}
+                            />
                             <span className="text-xs opacity-70 mt-1 block">
                               {new Date(msg.createdAt).toLocaleTimeString([], {
                                 hour: "2-digit",

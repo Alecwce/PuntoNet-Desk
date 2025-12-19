@@ -123,17 +123,26 @@ model Attachment {
   uploader   User   @relation(fields: [uploaderId], references: [id])
 }
 
+model TicketTemplate {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  subject     String
+  description String   @db.Text
+  priority    Priority @default(MEDIUM)
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model KnowledgeBase {
   id        String   @id @default(uuid())
   title     String
-  content   String
-  category  String?
-  tags      String[]
-  status    KBStatus @default(PUBLISHED)
+  content   String   @db.Text
+  tags      String?  // JSON array as string
   views     Int      @default(0)
+  status    KBStatus @default(DRAFT)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
 }
