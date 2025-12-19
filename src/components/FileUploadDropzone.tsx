@@ -3,6 +3,7 @@ import { useDropzone } from "react-dropzone";
 import { Icon } from "./Icon";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { MAX_FILE_SIZE } from "../constants";
 
 interface FileUploadDropzoneProps {
   ticketId: string;
@@ -18,9 +19,11 @@ export const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
       const file = acceptedFiles[0];
       if (!file) return;
 
-      // Max file size: 10MB
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error("Archivo demasiado grande (máx. 10MB)");
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        toast.error(
+          `Archivo demasiado grande (máx. ${MAX_FILE_SIZE / 1024 / 1024}MB)`
+        );
         return;
       }
 
@@ -47,7 +50,7 @@ export const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: MAX_FILE_SIZE,
   });
 
   return (

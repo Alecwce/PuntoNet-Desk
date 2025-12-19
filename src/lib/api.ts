@@ -32,6 +32,13 @@ export const fetchCsrfToken = async () => {
   }
 };
 
+// Auto-refresh CSRF token every 5 minutes
+if (typeof window !== "undefined") {
+  setInterval(() => {
+    fetchCsrfToken();
+  }, 300000); // 5 minutes
+}
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {

@@ -6,10 +6,16 @@ import { es } from "date-fns/locale";
  * @param date - Date string or Date object
  * @returns Formatted relative date string in Spanish
  */
-export const formatRelativeDate = (date: string | Date): string => {
+export const formatRelativeDate = (dateString: string | Date): string => {
   try {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-    return formatDistanceToNow(dateObj, { addSuffix: true, locale: es });
+    const date =
+      typeof dateString === "string" ? new Date(dateString) : dateString;
+
+    if (isNaN(date.getTime())) {
+      return "Fecha inválida";
+    }
+
+    return formatDistanceToNow(date, { addSuffix: true, locale: es });
   } catch (error) {
     console.error("Error formatting date:", error);
     return "Fecha inválida";
