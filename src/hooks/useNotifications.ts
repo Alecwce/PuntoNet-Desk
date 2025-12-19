@@ -59,13 +59,10 @@ export const useNotifications = () => {
   // Initial fetch and polling
   useEffect(() => {
     fetchNotifications();
-
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 30000); // Poll every 30 seconds
-
+    // FIX: Increased polling interval from 5s to 30s to prevent rate limiting (429 errors)
+    const interval = setInterval(fetchNotifications, 30000); // Poll every 30 seconds
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, []);
 
   return {
     notifications,
