@@ -4,6 +4,7 @@ import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { Select } from "@/components/ui/Select";
 import api from "../lib/api";
 import { useTickets } from "../hooks/useTickets";
 
@@ -104,7 +105,7 @@ export const TicketList: React.FC = () => {
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex-1 relative">
+        <div className="flex-1 relative order-1 md:order-none">
           <Icon
             name="search"
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -117,28 +118,64 @@ export const TicketList: React.FC = () => {
             onChange={(e) => setFilters({ search: e.target.value })}
           />
         </div>
-        <select
-          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
-          value={filters.status}
-          onChange={(e) => setFilters({ status: e.target.value })}
-        >
-          <option value="all">Todos los estados</option>
-          <option value="OPEN">Abiertos</option>
-          <option value="IN_PROGRESS">En Progreso</option>
-          <option value="RESOLVED">Resueltos</option>
-          <option value="CLOSED">Cerrados</option>
-        </select>
-        <select
-          className="px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
-          value={filters.priority}
-          onChange={(e) => setFilters({ priority: e.target.value })}
-        >
-          <option value="all">Todas las prioridades</option>
-          <option value="LOW">Baja</option>
-          <option value="MEDIUM">Media</option>
-          <option value="HIGH">Alta</option>
-          <option value="CRITICAL">Crítica</option>
-        </select>
+        <div className="flex gap-2 order-2 md:order-none">
+          <Select
+            className="w-full md:w-48"
+            value={filters.status || "all"}
+            onChange={(value) => setFilters({ status: value })}
+            options={[
+              { value: "all", label: "Estado: Todos" },
+              { value: "OPEN", label: "Abiertos", className: "text-blue-600" },
+              {
+                value: "IN_PROGRESS",
+                label: "En Progreso",
+                className: "text-yellow-600",
+              },
+              {
+                value: "RESOLVED",
+                label: "Resueltos",
+                className: "text-green-600",
+              },
+              {
+                value: "CLOSED",
+                label: "Cerrados",
+                className: "text-gray-600",
+              },
+            ]}
+          />
+          <Select
+            className="w-full md:w-48"
+            value={filters.priority || "all"}
+            onChange={(value) => setFilters({ priority: value })}
+            options={[
+              { value: "all", label: "Prioridad: Todas" },
+              {
+                value: "LOW",
+                label: "Baja",
+                icon: "info",
+                className: "text-blue-600",
+              },
+              {
+                value: "MEDIUM",
+                label: "Media",
+                icon: "info",
+                className: "text-yellow-600",
+              },
+              {
+                value: "HIGH",
+                label: "Alta",
+                icon: "warning",
+                className: "text-orange-600",
+              },
+              {
+                value: "CRITICAL",
+                label: "Crítica",
+                icon: "error",
+                className: "text-red-600",
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* List */}
@@ -152,7 +189,7 @@ export const TicketList: React.FC = () => {
             ))}
           </div>
         ) : tickets.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
             <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-full mb-4">
               <Icon
                 name="inbox"
@@ -175,57 +212,165 @@ export const TicketList: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-y-auto flex-1 overflow-x-auto min-w-full">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0 z-10">
-                <tr>
-                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                    Asunto
-                  </th>
-                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                    Estado
-                  </th>
-                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                    Prioridad
-                  </th>
-                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                    Solicitante
-                  </th>
-                  <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                    Fecha
-                  </th>
-                  {loggedInUser?.role === "ADMIN" && (
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-y-auto flex-1 overflow-x-auto min-w-full">
+              <table className="w-full text-left border-collapse min-w-[800px]">
+                <thead className="bg-gray-50 dark:bg-gray-900/50 sticky top-0 z-10">
+                  <tr>
                     <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
-                      Acciones
+                      Asunto
                     </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {currentTickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 cursor-pointer transition-colors group"
-                  >
-                    <td
-                      className="p-4"
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      Estado
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      Prioridad
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      Solicitante
+                    </th>
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      Fecha
+                    </th>
+                    {loggedInUser?.role === "ADMIN" && (
+                      <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                        Acciones
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {currentTickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 cursor-pointer transition-colors group"
                       onClick={() => navigate(`/tickets/${ticket.id}`)}
                     >
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
-                          {ticket.subject}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">
-                          {ticket.description}
-                        </p>
-                      </div>
-                    </td>
-                    <td
-                      className="p-4"
-                      onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    >
+                      <td className="p-4">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                            {ticket.subject}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">
+                            {ticket.description}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                            ticket.status
+                          )}`}
+                        >
+                          {ticket.status === "OPEN"
+                            ? "Abierto"
+                            : ticket.status === "IN_PROGRESS"
+                            ? "En Progreso"
+                            : ticket.status === "RESOLVED"
+                            ? "Resuelto"
+                            : "Cerrado"}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium gap-1 ${getPriorityColor(
+                            ticket.priority
+                          )}`}
+                        >
+                          <Icon
+                            name={
+                              ticket.priority === "CRITICAL"
+                                ? "error"
+                                : ticket.priority === "HIGH"
+                                ? "warning"
+                                : "info"
+                            }
+                            className="text-[14px]"
+                          />
+                          {ticket.priority}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
+                            style={{
+                              backgroundImage: `url("https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                ticket.client?.name || "U"
+                              )}&background=random")`,
+                            }}
+                          ></div>
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {ticket.client?.name || "Usuario"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(ticket.createdAt).toLocaleDateString(
+                          "es-ES",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          }
+                        )}
+                      </td>
+                      {loggedInUser?.role === "ADMIN" && (
+                        <td className="p-4 text-right">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(ticket.id);
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                            title="Eliminar ticket"
+                            aria-label="Eliminar ticket"
+                          >
+                            <Icon name="delete" className="text-lg" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3">
+              {currentTickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                  className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm active:scale-[0.98] transition-transform"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 mr-2">
+                      <h3 className="font-semibold text-gray-900 dark:text-white text-sm line-clamp-1">
+                        {ticket.subject}
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                        {ticket.description}
+                      </p>
+                    </div>
+                    {loggedInUser?.role === "ADMIN" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(ticket.id);
+                        }}
+                        className="p-1.5 text-gray-400 hover:text-red-500 bg-gray-50 dark:bg-gray-700/50 rounded-lg"
+                      >
+                        <Icon name="delete" className="text-lg" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-2">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                        className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide ${getStatusColor(
                           ticket.status
                         )}`}
                       >
@@ -237,78 +382,37 @@ export const TicketList: React.FC = () => {
                           ? "Resuelto"
                           : "Cerrado"}
                       </span>
-                    </td>
-                    <td
-                      className="p-4"
-                      onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    >
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium gap-1 ${getPriorityColor(
-                          ticket.priority
-                        )}`}
-                      >
-                        <Icon
-                          name={
-                            ticket.priority === "CRITICAL"
-                              ? "error"
-                              : ticket.priority === "HIGH"
-                              ? "warning"
-                              : "info"
+                      <span className="text-xs text-gray-400">•</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date(ticket.createdAt).toLocaleDateString(
+                          "es-ES",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
                           }
-                          className="text-[14px]"
-                        />
-                        {ticket.priority}
+                        )}
                       </span>
-                    </td>
-                    <td
-                      className="p-4"
-                      onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
-                          style={{
-                            backgroundImage: `url("https://ui-avatars.com/api/?name=${encodeURIComponent(
-                              ticket.client?.name || "U"
-                            )}&background=random")`,
-                          }}
-                        ></div>
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {ticket.client?.name || "Usuario"}
-                        </span>
-                      </div>
-                    </td>
-                    <td
-                      className="p-4 text-sm text-gray-500 dark:text-gray-400"
-                      onClick={() => navigate(`/tickets/${ticket.id}`)}
-                    >
-                      {new Date(ticket.createdAt).toLocaleDateString("es-ES", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })}
-                    </td>
-                    {/* DELETE BUTTON FOR ADMIN */}
-                    {loggedInUser?.role === "ADMIN" && (
-                      <td className="p-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(ticket.id);
-                          }}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
-                          title="Eliminar ticket"
-                          aria-label="Eliminar ticket"
-                        >
-                          <Icon name="delete" className="text-lg" />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+
+                    <div
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        ticket.priority === "CRITICAL"
+                          ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                          : ticket.priority === "HIGH"
+                          ? "bg-orange-500"
+                          : ticket.priority === "MEDIUM"
+                          ? "bg-yellow-500"
+                          : "bg-blue-500"
+                      }`}
+                      title={`Prioridad: ${ticket.priority}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile Floating Action Button (FAB) for creating tickets could go here if header button wasn't enough */}
+          </>
         )}
       </div>
 

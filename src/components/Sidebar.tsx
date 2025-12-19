@@ -112,7 +112,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <button
                 onClick={onClose}
-                className="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="md:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <Icon name="close" />
               </button>
@@ -130,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         navigate(item.path);
                         onClose?.();
                       }}
-                      className={`flex items-center gap-3 px-3 py-2 rounded-DEFAULT transition-colors ${
+                      className={`flex items-center gap-3 px-3 py-3 rounded-DEFAULT transition-colors ${
                         isActive
                           ? "bg-primary/10 dark:bg-primary/20 text-primary dark:text-white"
                           : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"

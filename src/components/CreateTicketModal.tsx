@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Icon } from "./Icon";
+// api import removed as it is unused
+import { toast } from "sonner";
+import { Select } from "@/components/ui/Select";
+import { motion, AnimatePresence } from "framer-motion";
 import { Ticket } from "../types";
 
 interface CreateTicketModalProps {
@@ -24,40 +28,49 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   onEdit,
   ticketToEdit,
 }) => {
-  const [subject, setSubject] = useState("");
-  const [priority, setPriority] = useState("MEDIUM");
-  const [description, setDescription] = useState("");
+  const [formData, setFormData] = useState({
+    subject: "",
+    description: "",
+    priority: "MEDIUM",
+    category: "SOPORTE",
+  });
+
   const [errors, setErrors] = useState<{
     subject?: string;
     description?: string;
   }>({});
 
-  // Effect to populate fields when editing
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (isOpen && ticketToEdit) {
-      setSubject(ticketToEdit.subject);
-      setPriority(ticketToEdit.priority);
-      // Use description directly from ticket
-      setDescription((ticketToEdit as any).description || "");
+      setFormData({
+        subject: ticketToEdit.subject,
+        priority: ticketToEdit.priority,
+        description: (ticketToEdit as any).description || "",
+        category: "SOPORTE", // Default or derived if available
+      });
     } else if (isOpen && !ticketToEdit) {
-      // Reset if opening in create mode
-      setSubject("");
-      setPriority("MEDIUM");
-      setDescription("");
+      setFormData({
+        subject: "",
+        description: "",
+        priority: "MEDIUM",
+        category: "SOPORTE",
+      });
     }
     setErrors({});
   }, [isOpen, ticketToEdit]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { subject?: string; description?: string } = {};
 
-    if (!subject.trim()) {
+    if (!formData.subject.trim()) {
       newErrors.subject = "El asunto es obligatorio";
     }
-    if (!description.trim()) {
+    if (!formData.description.trim()) {
       newErrors.description = "La descripción es obligatoria";
     }
 
@@ -66,185 +79,215 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       return;
     }
 
-    if (ticketToEdit && onEdit) {
-      onEdit(ticketToEdit.id, { subject, priority, description });
-    } else {
-      onCreate({ subject, priority, description });
-    }
+    setLoading(true);
+    try {
+      if (ticketToEdit && onEdit) {
+        await onEdit(ticketToEdit.id, formData);
+      } else {
+        await onCreate(formData);
+      }
 
-    // Reset form and close
-    setSubject("");
-    setPriority("MEDIUM");
-    setDescription("");
-    setErrors({});
-    onClose();
+      // Reset and close
+      setFormData({
+        subject: "",
+        description: "",
+        priority: "MEDIUM",
+        category: "SOPORTE",
+      });
+      setErrors({});
+      onClose();
+    } catch (error) {
+      toast.error("Error al procesar el ticket");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const isEditMode = !!ticketToEdit;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-center justify-center p-4 text-center sm:p-0">
-        {/* Backdrop */}
+    <AnimatePresence>
+      {isOpen && (
         <div
-          className="fixed inset-0 bg-gray-500/75 dark:bg-gray-900/80 transition-opacity"
-          onClick={onClose}
-          aria-hidden="true"
-        ></div>
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+          style={{ zIndex: 9999 }}
+        >
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
 
-        {/* Modal Panel */}
-        <div className="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary p-1.5 rounded-lg">
-                <Icon
-                  name={isEditMode ? "edit" : "confirmation_number"}
-                  className="text-white text-lg"
+          {/* Modal Content */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col max-h-[90vh] z-10"
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800 sticky top-0 z-20">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Icon
+                    name={isEditMode ? "edit" : "add_circle"}
+                    className="text-primary"
+                  />
+                  {isEditMode ? "Editar Ticket" : "Nuevo Ticket"}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Complete la información para su solicitud
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={handleSubmit}
+              className="p-6 space-y-5 overflow-y-auto"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Asunto <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.subject}
+                  onChange={(e) => {
+                    setFormData({ ...formData, subject: e.target.value });
+                    if (errors.subject)
+                      setErrors({ ...errors, subject: undefined });
+                  }}
+                  className={`w-full px-4 py-2.5 rounded-lg border ${
+                    errors.subject
+                      ? "border-red-500 ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600"
+                  } bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all`}
+                  placeholder="Ej: Error de conexión VPN"
+                />
+                {errors.subject && (
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                    <Icon name="error" className="text-xs" /> {errors.subject}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <Select
+                  label="Prioridad"
+                  value={formData.priority}
+                  onChange={(value) =>
+                    setFormData({ ...formData, priority: value })
+                  }
+                  options={[
+                    {
+                      value: "LOW",
+                      label: "Baja",
+                      icon: "info",
+                      className: "text-blue-600",
+                    },
+                    {
+                      value: "MEDIUM",
+                      label: "Media",
+                      icon: "help",
+                      className: "text-yellow-600",
+                    },
+                    {
+                      value: "HIGH",
+                      label: "Alta",
+                      icon: "warning",
+                      className: "text-orange-600",
+                    },
+                    {
+                      value: "CRITICAL",
+                      label: "Crítica",
+                      icon: "error",
+                      className: "text-red-600",
+                    },
+                  ]}
+                />
+                <Select
+                  label="Categoría"
+                  value={formData.category}
+                  onChange={(value) =>
+                    setFormData({ ...formData, category: value })
+                  }
+                  options={[
+                    {
+                      value: "SOPORTE",
+                      label: "Soporte Técnico",
+                      icon: "computer",
+                    },
+                    { value: "REDES", label: "Redes", icon: "wifi" },
+                    { value: "SOFTWARE", label: "Software", icon: "code" },
+                    { value: "HARDWARE", label: "Hardware", icon: "devices" },
+                  ]}
                 />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white leading-6">
-                {isEditMode
-                  ? `Editar Ticket #${ticketToEdit?.id.replace("TK-", "")}`
-                  : "Crear Nuevo Ticket"}
-              </h3>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none"
-            >
-              <Icon name="close" className="text-xl" />
-            </button>
-          </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="px-6 py-6 space-y-6">
-              {/* Section 1 */}
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">
-                  Identificación del Ticket
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="col-span-1">
-                    <label
-                      htmlFor="subject"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      Asunto
-                    </label>
-                    <input
-                      type="text"
-                      id="subject"
-                      value={subject}
-                      onChange={(e) => {
-                        setSubject(e.target.value);
-                        if (errors.subject)
-                          setErrors({ ...errors, subject: undefined });
-                      }}
-                      className={`form-input w-full rounded-lg border ${
-                        errors.subject
-                          ? "border-red-500 focus:ring-red-500"
-                          : "border-gray-300 dark:border-gray-600 focus:ring-primary"
-                      } dark:bg-gray-900 dark:text-white sm:text-sm py-2.5`}
-                      placeholder="Ej: Problema con la impresora"
-                    />
-                    {errors.subject && (
-                      <p className="mt-1 text-xs text-red-500">
-                        {errors.subject}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="col-span-1">
-                    <label
-                      htmlFor="priority"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                    >
-                      Prioridad
-                    </label>
-                    <div className="relative">
-                      <select
-                        id="priority"
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value)}
-                        className="form-select w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white sm:text-sm py-2.5 appearance-none"
-                      >
-                        <option value="LOW">Baja</option>
-                        <option value="MEDIUM">Media</option>
-                        <option value="HIGH">Alta</option>
-                        <option value="CRITICAL">Crítica</option>
-                      </select>
-                      <Icon
-                        name="expand_more"
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Descripción <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={formData.description}
+                  onChange={(e) => {
+                    setFormData({ ...formData, description: e.target.value });
+                    if (errors.description)
+                      setErrors({ ...errors, description: undefined });
+                  }}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    errors.description
+                      ? "border-red-500 ring-red-500/20"
+                      : "border-gray-300 dark:border-gray-600"
+                  } bg-white dark:bg-gray-700/50 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all resize-none`}
+                  placeholder="Describa el problema detalladamente..."
+                />
+                {errors.description && (
+                  <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">
+                    <Icon name="error" className="text-xs" />{" "}
+                    {errors.description}
+                  </p>
+                )}
               </div>
-
-              {/* Section 2 */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4 uppercase tracking-wider">
-                  Detalles del Incidente
-                </h4>
-                <div>
-                  <label
-                    htmlFor="description"
-                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                  >
-                    Descripción
-                  </label>
-                  <textarea
-                    id="description"
-                    rows={6}
-                    value={description}
-                    onChange={(e) => {
-                      setDescription(e.target.value);
-                      if (errors.description)
-                        setErrors({ ...errors, description: undefined });
-                    }}
-                    maxLength={1000}
-                    className={`form-textarea w-full rounded-lg border ${
-                      errors.description
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 dark:border-gray-600 focus:ring-primary"
-                    } dark:bg-gray-900 dark:text-white sm:text-sm p-3 resize-none`}
-                    placeholder="Por favor, describe el problema con la mayor cantidad de detalles posible..."
-                  ></textarea>
-                  <div className="flex justify-end mt-1">
-                    <span className="text-xs text-gray-400">
-                      {description.length}/1000 caracteres
-                    </span>
-                  </div>
-                  {errors.description && (
-                    <p className="mt-1 text-xs text-red-500">
-                      {errors.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            </form>
 
             {/* Footer */}
-            <div className="bg-gray-50 dark:bg-gray-700/30 px-6 py-4 flex flex-row-reverse gap-3 rounded-b-lg">
-              <button
-                type="submit"
-                className="inline-flex justify-center rounded-lg border border-transparent bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
-              >
-                {isEditMode ? "Guardar Cambios" : "Crear Ticket"}
-              </button>
+            <div className="p-6 pt-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 sticky bottom-0 z-10">
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex justify-center rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-all"
+                className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               >
                 Cancelar
               </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="px-5 py-2.5 text-sm font-medium text-white bg-primary hover:bg-primary/90 active:scale-95 rounded-lg shadow-lg shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              >
+                {loading ? (
+                  <Icon name="refresh" className="animate-spin" />
+                ) : (
+                  <Icon name="send" />
+                )}
+                {isEditMode ? "Guardar" : "Crear Ticket"}
+              </button>
             </div>
-          </form>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   );
 };

@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Icon } from "../components/Icon";
+import { CreateTicketModal } from "@/components/CreateTicketModal";
+import { Select } from "@/components/ui/Select";
+import api from "@/lib/api";
+import { toast } from "sonner";
 import { Ticket } from "../types";
-import api from "../lib/api";
 
 export const TicketDetail: React.FC = () => {
   const { ticketId } = useParams<{ ticketId: string }>();
@@ -12,6 +15,10 @@ export const TicketDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState("activity");
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const userStr = localStorage.getItem("user");
+  const user = userStr ? JSON.parse(userStr) : null;
+  const canEdit = user && ["ADMIN", "SUPPORT", "AGENT"].includes(user.role);
 
   // Fetch ticket data
   const fetchTicket = async () => {
@@ -141,29 +148,70 @@ export const TicketDetail: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Status Selector */}
-          <select
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-            value={ticket.status}
-            onChange={(e) => handleStatusChange(e.target.value)}
-          >
-            <option value="OPEN">Abierto</option>
-            <option value="IN_PROGRESS">En Progreso</option>
-            <option value="RESOLVED">Resuelto</option>
-            <option value="CLOSED">Cerrado</option>
-          </select>
+          {/* Actions for Admin */}
+          {canEdit && (
+            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <Select
+                className="w-full sm:w-48"
+                value={ticket.status}
+                onChange={(val) => handleStatusChange(val)}
+                options={[
+                  {
+                    value: "OPEN",
+                    label: "Abierto",
+                    className: "text-blue-600",
+                  },
+                  {
+                    value: "IN_PROGRESS",
+                    label: "En Progreso",
+                    className: "text-yellow-600",
+                  },
+                  {
+                    value: "RESOLVED",
+                    label: "Resuelto",
+                    className: "text-green-600",
+                  },
+                  {
+                    value: "CLOSED",
+                    label: "Cerrado",
+                    className: "text-gray-600",
+                  },
+                ]}
+              />
 
-          {/* Priority Selector */}
-          <select
-            className="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white text-sm rounded-lg focus:ring-primary focus:border-primary block p-2.5"
-            value={ticket.priority}
-            onChange={(e) => handlePriorityChange(e.target.value)}
-          >
-            <option value="LOW">Baja</option>
-            <option value="MEDIUM">Media</option>
-            <option value="HIGH">Alta</option>
-            <option value="CRITICAL">Crítica</option>
-          </select>
+              <Select
+                className="w-full sm:w-48"
+                value={ticket.priority}
+                onChange={(val) => handlePriorityChange(val)}
+                options={[
+                  {
+                    value: "LOW",
+                    label: "Baja",
+                    icon: "info",
+                    className: "text-blue-600",
+                  },
+                  {
+                    value: "MEDIUM",
+                    label: "Media",
+                    icon: "info",
+                    className: "text-yellow-600",
+                  },
+                  {
+                    value: "HIGH",
+                    label: "Alta",
+                    icon: "warning",
+                    className: "text-orange-600",
+                  },
+                  {
+                    value: "CRITICAL",
+                    label: "Crítica",
+                    icon: "error",
+                    className: "text-red-600",
+                  },
+                ]}
+              />
+            </div>
+          )}
         </div>
       </div>
 
