@@ -9,7 +9,7 @@ import {
 } from "../controllers/ticket.controller";
 import { uploadAttachment } from "../controllers/attachment.controller";
 import { upload } from "../middleware/upload.middleware";
-import { authenticate } from "../middleware/auth.middleware";
+import { authenticate, authorize } from "../middleware/auth.middleware";
 
 import { validateResource } from "../middleware/validate.middleware";
 import {
@@ -26,7 +26,7 @@ router.get("/", getTickets);
 router.get("/:id", getTicketById);
 router.post("/", validateResource(createTicketSchema), createTicket);
 router.put("/:id", validateResource(updateTicketSchema), updateTicket);
-router.delete("/:id", deleteTicket);
+router.delete("/:id", authorize(["ADMIN"]), deleteTicket);
 router.post("/:id/messages", addMessage);
 router.post("/:id/attachments", upload.single("file"), uploadAttachment);
 

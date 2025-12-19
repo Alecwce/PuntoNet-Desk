@@ -17,6 +17,26 @@ export const TicketList: React.FC = () => {
     priority: "all",
   });
 
+  // Parse user role
+  const loggedInUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const handleDelete = async (id: string) => {
+    if (
+      window.confirm(
+        "¿Estás seguro de eliminar este ticket? Esta acción no se puede deshacer."
+      )
+    ) {
+      try {
+        await api.delete(`/tickets/${id}`);
+        toast.success("Ticket eliminado");
+        refetch();
+      } catch (error) {
+        console.error("Error deleting ticket:", error);
+        toast.error("Error al eliminar el ticket");
+      }
+    }
+  };
+
   const handleCreateTicket = async (data: any) => {
     try {
       await api.post("/tickets", data);
@@ -156,16 +176,23 @@ export const TicketList: React.FC = () => {
                   <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
                     Fecha
                   </th>
+                  {loggedInUser?.role === "ADMIN" && (
+                    <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                      Acciones
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {currentTickets.map((ticket) => (
                   <tr
                     key={ticket.id}
-                    onClick={() => navigate(`/tickets/${ticket.id}`)}
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors group"
                   >
-                    <td className="p-4">
+                    <td
+                      className="p-4"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
                           {ticket.subject}
@@ -175,7 +202,10 @@ export const TicketList: React.FC = () => {
                         </p>
                       </div>
                     </td>
-                    <td className="p-4">
+                    <td
+                      className="p-4"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
                           ticket.status
@@ -190,7 +220,10 @@ export const TicketList: React.FC = () => {
                           : "Cerrado"}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td
+                      className="p-4"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium gap-1 ${getPriorityColor(
                           ticket.priority
@@ -209,7 +242,10 @@ export const TicketList: React.FC = () => {
                         {ticket.priority}
                       </span>
                     </td>
-                    <td className="p-4">
+                    <td
+                      className="p-4"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
                       <div className="flex items-center gap-2">
                         <div
                           className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
@@ -224,9 +260,27 @@ export const TicketList: React.FC = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
+                    <td
+                      className="p-4 text-sm text-gray-500 dark:text-gray-400"
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
                       {new Date(ticket.createdAt).toLocaleDateString()}
                     </td>
+                    {/* DELETE BUTTON FOR ADMIN */}
+                    {loggedInUser?.role === "ADMIN" && (
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(ticket.id);
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                          title="Eliminar ticket"
+                        >
+                          <Icon name="delete" className="text-lg" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

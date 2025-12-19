@@ -24,6 +24,12 @@ export const getTickets = async (req: Request, res: Response) => {
       where.priority = priority as any;
     }
 
+    // RBAC: Client can only see their own tickets
+    const user = (req as any).user;
+    if (user && user.role === "CLIENT") {
+      where.creatorId = user.id;
+    }
+
     if (search) {
       where.OR = [
         { subject: { contains: search, mode: "insensitive" } },
