@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import api from "../lib/api";
 import { Ticket } from "../types";
-import { MOCK_TICKETS } from "../constants";
 
 interface UseTicketsFilters {
   limit?: number;
@@ -31,24 +30,8 @@ export const useTickets = (initialFilters: UseTicketsFilters = {}) => {
       setTickets(response.data.data || []);
     } catch (error) {
       console.error("Error fetching tickets:", error);
-      // Fallback logic as requested
-      let mocks = [...MOCK_TICKETS];
-      if (filters.limit) mocks = mocks.slice(0, filters.limit);
-      // Simple client-side filtering for mocks if API fails
-      if (filters.search) {
-        mocks = mocks.filter(
-          (t) =>
-            t.subject.toLowerCase().includes(filters.search!.toLowerCase()) ||
-            t.description.toLowerCase().includes(filters.search!.toLowerCase())
-        );
-      }
-      if (filters.status && filters.status !== "all") {
-        mocks = mocks.filter((t) => t.status === filters.status);
-      }
-      if (filters.priority && filters.priority !== "all") {
-        mocks = mocks.filter((t) => t.priority === filters.priority);
-      }
-      setTickets(mocks);
+      setTickets([]);
+      // You might want to set an error state here to show a UI message
     } finally {
       setLoading(false);
     }

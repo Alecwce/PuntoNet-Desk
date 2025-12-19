@@ -25,7 +25,7 @@ export const getTickets = async (req: Request, res: Response) => {
     }
 
     // RBAC: Client can only see their own tickets
-    const user = (req as any).user;
+    const user = req.user;
     if (user && user.role === "CLIENT") {
       where.creatorId = user.id;
     }

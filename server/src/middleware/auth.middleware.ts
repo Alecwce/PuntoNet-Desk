@@ -3,15 +3,6 @@ import { prisma } from "../index";
 import { User, Role } from "@prisma/client";
 import jwt from "jsonwebtoken";
 
-// Extend Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: User;
-    }
-  }
-}
-
 interface TokenPayload {
   userId: string;
   role: Role;
