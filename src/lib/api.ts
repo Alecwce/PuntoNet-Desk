@@ -15,6 +15,12 @@ const api = axios.create({
 let csrfToken: string | null = null;
 
 // Function to fetch CSRF token
+/**
+ * Fetches the CSRF token from the backend and stores it for subsequent requests.
+ * Automatic refresh is configured to run every 5 minutes.
+ *
+ * @returns {Promise<void>} Resolves when token is fetched
+ */
 export const fetchCsrfToken = async () => {
   try {
     const { data } = await axios.get(
