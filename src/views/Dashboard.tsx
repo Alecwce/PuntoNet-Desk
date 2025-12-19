@@ -1,4 +1,6 @@
 import React from "react";
+import api from "../lib/api";
+import { toast } from "sonner";
 import {
   BarChart,
   Bar,
@@ -22,20 +24,58 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
   const navigate = useNavigate();
 
-  const stats = {
-    total: tickets.length,
-    open: tickets.filter((t) => t.status === "OPEN").length,
-    inProgress: tickets.filter((t) => t.status === "IN_PROGRESS").length,
-    resolved: tickets.filter((t) => t.status === "RESOLVED").length,
-    critical: tickets.filter((t) => t.priority === "CRITICAL").length,
-  };
+  // FIX: Dashboard now fetches its own stats
+  const [loading, setLoading] = React.useState(true);
+  const [dashboardStats, setDashboardStats] = React.useState({
+    total: 0,
+    open: 0,
+    inProgress: 0,
+    resolved: 0,
+    critical: 0,
+  });
 
-  const data = [
-    { name: "Abiertos", value: stats.open },
-    { name: "En Proceso", value: stats.inProgress },
-    { name: "Resueltos", value: stats.resolved },
-  ];
+  const [chartData, setChartData] = React.useState<any[]>([]);
 
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        // Assuming api is imported from lib/api, if not we use fetch or similar
+        // Based on other files, api is default import from "../lib/api"
+        // I will dynamically import it or assume it is available.
+        // Wait, I cannot import inside useEffect.
+        // I'll assume 'api' is available or import it at top (it wasn't imported in original file).
+        // Original file used 'onRefresh' prop but didn't import api.
+        // I need to import api. I'll add the import in a separate edit or use window.fetch if needed,
+        // but best practice is to reuse the api instance.
+        // For now, I'll write the logic assuming 'api' is imported.
+        // Wait, I don't see 'api' imported in the original file I read.
+        // I will add the import in a separate tool call to be safe.
+
+        const { data } = await api.get("/reports/stats");
+        setDashboardStats({
+          total: data.tickets.total,
+          open: data.tickets.open,
+          inProgress: data.tickets.inProgress,
+          resolved: data.tickets.resolved,
+          critical: data.tickets.critical, // Using the new field we added
+        });
+        setChartData([
+          { name: "Abiertos", value: data.tickets.open },
+          { name: "En Proceso", value: data.tickets.inProgress },
+          { name: "Resueltos", value: data.tickets.resolved },
+        ]);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+        toast.error("Error al cargar estadísticas");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, [onRefresh]);
+
+  // Sort recent tickets from props (Limit to 5 for UI)
   const recentTickets = [...tickets]
     .sort(
       (a, b) =>
@@ -43,7 +83,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
     )
     .slice(0, 5);
 
-  if (!tickets || tickets.length === 0) {
+  if (loading) {
     return (
       <div className="p-8 space-y-8">
         <div className="flex items-center justify-between">
@@ -124,7 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
             </span>
           </div>
           <h3 className="text-3xl font-bold text-gray-800 dark:text-white">
-            {stats.total}
+            {dashboardStats.total}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Tickets totales
@@ -142,11 +182,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
               <Icon name="pending" />
             </div>
             <span className="text-xs font-medium text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
-              {stats.open} Pendientes
+              {dashboardStats.open} Pendientes
             </span>
           </div>
           <h3 className="text-3xl font-bold text-gray-800 dark:text-white">
-            {stats.inProgress}
+            {dashboardStats.inProgress}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             En progreso
@@ -164,11 +204,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
               <Icon name="check_circle" />
             </div>
             <span className="text-xs font-medium text-green-600 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded-full">
-              +12% vs ayer
+              Resueltos
             </span>
           </div>
           <h3 className="text-3xl font-bold text-gray-800 dark:text-white">
-            {stats.resolved}
+            {dashboardStats.resolved}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Resueltos
@@ -190,7 +230,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
             </span>
           </div>
           <h3 className="text-3xl font-bold text-gray-800 dark:text-white">
-            {stats.critical}
+            {dashboardStats.critical}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Críticos
@@ -211,7 +251,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
           </h3>
           <div className="h-[300px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />

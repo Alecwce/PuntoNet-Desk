@@ -77,22 +77,10 @@ console.log("   NODE_ENV:", process.env.NODE_ENV);
 console.log("   PORT:", port);
 console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
+// FIX: Use standard CORS middleware
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // Check against whitelist (STRICT MODE - NO WILDCARDS)
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        return callback(null, true);
-      } else {
-        console.warn(`🚫 CORS BLOCKED: ${origin}`);
-        return callback(null, false);
-      }
-    },
+    origin: allowedOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
@@ -104,13 +92,9 @@ app.use(
       "CSRF-Token",
       "X-CSRF-Token",
       "x-2fa-token",
-      "Access-Control-Allow-Headers",
-      "Access-Control-Request-Headers",
     ],
     exposedHeaders: ["Content-Range", "X-Content-Range"],
-    maxAge: 600, // Reduced maxAge to 10 mins for easier debugging
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
+    maxAge: 600,
   })
 );
 

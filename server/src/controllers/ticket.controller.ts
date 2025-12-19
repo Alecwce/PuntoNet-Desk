@@ -151,16 +151,51 @@ export const createTicket = async (req: Request, res: Response) => {
 export const updateTicket = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { subject, description, priority, status, assigneeId } = req.body;
+  const user = (req as any).user;
+
+  // FIX: Fetch ticket first to check ownership
+  const ticket = await prisma.ticket.findUnique({ where: { id } });
+  if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const ticket = await prisma.ticket.update({
+    // FIX: Implement RBAC
+    if (user.role === "CLIENT") {
+      // 1. Check ownership
+      if (ticket.creatorId !== user.id) {
+        return res
+          .status(403)
+          .json({ error: "Forbidden: You can only update your own tickets" });
+      }
+
+      // 2. Prevent restricted field updates
+      if (assigneeId || priority) {
+        return res.status(403).json({
+          error: "Forbidden: Clients cannot modify assignee or priority",
+        });
+      }
+
+      // 3. Prevent sensitive status updates (only allow canceling/closing if needed, or block completely)
+      // Assuming strict rule: "NO puede modificar... status sensible" implies blocking status changes that aren't controlled.
+      // For now, let's allow them to 'RESOLVED' or 'CLOSED' if they want to close it?
+      // User prompt says "NO puede modificar... status sensible".
+      // I will STRICTLY block status changes for CLIENT to be safe and compliant with the "Security" focus.
+      if (status && status !== ticket.status) {
+        return res.status(403).json({
+          error: "Forbidden: Clients cannot modify status",
+        });
+      }
+    }
+
+    const updatedTicket = await prisma.ticket.update({
       where: { id },
       data: {
         subject,
         description,
-        priority,
-        status,
-        assigneeId,
+        priority: user.role === "CLIENT" ? undefined : priority, // Double safety
+        status: user.role === "CLIENT" ? undefined : status, // Double safety
+        assigneeId: user.role === "CLIENT" ? undefined : assigneeId, // Double safety
       },
       include: {
         assignee: true,
@@ -171,19 +206,19 @@ export const updateTicket = async (req: Request, res: Response) => {
 
     // Notify Update
     try {
-      if (assigneeId && ticket.assigneeId === assigneeId) {
+      if (assigneeId && updatedTicket.assigneeId === assigneeId) {
         notify(
           assigneeId,
           "Ticket Asignado",
-          `Te asignaron: ${ticket.subject}`,
+          `Te asignaron: ${updatedTicket.subject}`,
           "INFO"
         );
       }
-      if (status && ticket.status === status) {
+      if (status && updatedTicket.status === status) {
         notify(
-          ticket.creatorId,
+          updatedTicket.creatorId,
           "Estado Actualizado",
-          `Tu ticket "${ticket.subject}" ahora está: ${status}`,
+          `Tu ticket "${updatedTicket.subject}" ahora está: ${status}`,
           "SUCCESS"
         );
       }
@@ -191,7 +226,7 @@ export const updateTicket = async (req: Request, res: Response) => {
       console.error("Notification error", e);
     }
 
-    res.json(ticket);
+    res.json(updatedTicket);
   } catch (error) {
     console.error("Error updating ticket:", error);
     res.status(500).json({ error: "Failed to update ticket" });

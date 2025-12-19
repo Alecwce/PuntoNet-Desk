@@ -30,6 +30,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       totalClients,
       totalAgents,
       totalKBArticles,
+      criticalTickets, // FIX: Destructure correctly
     ] = await Promise.all([
       prisma.ticket.count({ where: whereClause }),
       prisma.ticket.count({ where: { ...whereClause, status: "OPEN" } }),
@@ -40,6 +41,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       prisma.user.count({ where: { role: "CLIENT" } }),
       prisma.user.count({ where: { role: "AGENT" } }),
       prisma.knowledgeBase.count({ where: { status: "PUBLISHED" } }),
+      // FIX: Add Critical tickets count
+      prisma.ticket.count({ where: { ...whereClause, priority: "CRITICAL" } }),
     ]);
 
     res.json({
@@ -49,6 +52,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         inProgress: inProgressTickets,
         resolved: resolvedTickets,
         closed: closedTickets,
+        critical: criticalTickets,
       },
       users: {
         total: totalUsers,
