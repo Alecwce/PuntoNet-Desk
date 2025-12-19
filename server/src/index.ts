@@ -25,6 +25,7 @@ const port = process.env.PORT || 3001;
 // Route imports
 import authRoutes from "./routes/auth.routes";
 import ticketRoutes from "./routes/ticket.routes";
+import templatesRoutes from "./routes/templates.routes";
 import kbRoutes from "./routes/kb.routes";
 import userRoutes from "./routes/user.routes";
 import clientRoutes from "./routes/client.routes";
@@ -182,6 +183,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/ticket-templates", templatesRoutes);
 app.use("/api/kb", kbRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/clients", clientRoutes);

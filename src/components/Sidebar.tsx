@@ -41,6 +41,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       roles: ["ADMIN", "AGENT", "CLIENT"],
     },
     {
+      id: "service-catalog",
+      path: "/service-catalog",
+      label: "Catálogo de Servicios",
+      icon: "store",
+      roles: ["ADMIN", "AGENT", "CLIENT"],
+    },
+    {
       id: "kb",
       path: "/kb",
       label: "Base de Conocimiento",

@@ -19,6 +19,13 @@ interface CreateTicketModalProps {
     data: { subject: string; priority: string; description: string }
   ) => void;
   ticketToEdit?: Ticket | null;
+  template?: {
+    name: string;
+    subject: string;
+    description: string;
+    priority: string;
+    category?: string;
+  };
 }
 
 export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
@@ -27,6 +34,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
   onCreate,
   onEdit,
   ticketToEdit,
+  template,
 }) => {
   const [formData, setFormData] = useState({
     subject: "",
@@ -48,7 +56,15 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
         subject: ticketToEdit.subject,
         priority: ticketToEdit.priority,
         description: (ticketToEdit as any).description || "",
-        category: "SOPORTE", // Default or derived if available
+        category: "SOPORTE",
+      });
+    } else if (isOpen && template) {
+      // Pre-fill from template
+      setFormData({
+        subject: template.subject,
+        description: template.description,
+        priority: template.priority,
+        category: template.category || "SOPORTE",
       });
     } else if (isOpen && !ticketToEdit) {
       setFormData({
@@ -59,7 +75,7 @@ export const CreateTicketModal: React.FC<CreateTicketModalProps> = ({
       });
     }
     setErrors({});
-  }, [isOpen, ticketToEdit]);
+  }, [isOpen, ticketToEdit, template]);
 
   if (!isOpen) return null;
 

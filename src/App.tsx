@@ -20,6 +20,7 @@ import { Settings } from "./views/Settings";
 import { Clients } from "./views/Clients";
 import { Reports } from "./views/Reports";
 import { MainLayout } from "./components/MainLayout";
+import { ServiceCatalog } from "./views/ServiceCatalog";
 
 function App() {
   const navigate = useNavigate();
@@ -125,6 +126,17 @@ function App() {
           <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
             <MainLayout user={user} onLogout={handleLogout}>
               <TicketDetail />
+            </MainLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/service-catalog"
+        element={
+          <ProtectedRoute allowedRoles={["ADMIN", "AGENT", "CLIENT"]}>
+            <MainLayout user={user} onLogout={handleLogout}>
+              <ServiceCatalog />
             </MainLayout>
           </ProtectedRoute>
         }
