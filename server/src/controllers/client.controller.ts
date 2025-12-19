@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 // Get all clients with pagination and search
@@ -11,7 +12,7 @@ export const getClients = async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    const where: any = {
+    const where: Prisma.UserWhereInput = {
       role: "CLIENT", // Only fetch CLIENT role users
     };
 
@@ -220,7 +221,7 @@ export const updateClient = async (req: Request, res: Response) => {
     }
 
     // Prepare update data
-    const updateData: any = {};
+    const updateData: Prisma.UserUpdateInput = {};
     if (email) updateData.email = email;
     if (name) {
       updateData.name = name;
@@ -280,9 +281,8 @@ export const deleteClient = async (req: Request, res: Response) => {
 
     // 3. Update or delete tickets (set creator to null or delete)
     // Option 1: Set creatorId to null (keep tickets)
-    await prisma.ticket.updateMany({
+    await prisma.ticket.deleteMany({
       where: { creatorId: id },
-      data: { creatorId: null as any }, // This will need schema change to allow null
     });
 
     // 4. Delete the client

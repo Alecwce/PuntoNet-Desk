@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { Prisma } from "@prisma/client";
 
 // Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response) => {
@@ -7,7 +8,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const { startDate, endDate } = req.query;
 
     // Date filters
-    const dateFilter: any = {};
+    const dateFilter: Prisma.DateTimeFilter = {};
     if (startDate) {
       dateFilter.gte = new Date(startDate as string);
     }
@@ -69,7 +70,7 @@ export const getTicketsByStatus = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
 
-    const dateFilter: any = {};
+    const dateFilter: Prisma.DateTimeFilter = {};
     if (startDate) dateFilter.gte = new Date(startDate as string);
     if (endDate) dateFilter.lte = new Date(endDate as string);
 
@@ -101,7 +102,7 @@ export const getTicketsByPriority = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
 
-    const dateFilter: any = {};
+    const dateFilter: Prisma.DateTimeFilter = {};
     if (startDate) dateFilter.gte = new Date(startDate as string);
     if (endDate) dateFilter.lte = new Date(endDate as string);
 
@@ -133,7 +134,7 @@ export const getTicketsTimeline = async (req: Request, res: Response) => {
   try {
     const { startDate, endDate, groupBy = "day" } = req.query;
 
-    const dateFilter: any = {};
+    const dateFilter: Prisma.DateTimeFilter = {};
     if (startDate) dateFilter.gte = new Date(startDate as string);
     if (endDate) dateFilter.lte = new Date(endDate as string);
 

@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
+import { Prisma } from "@prisma/client";
 
 export const getArticles = async (req: Request, res: Response) => {
   const { search, category } = req.query;
   try {
-    const where: any = {};
+    const where: Prisma.KnowledgeBaseWhereInput = {};
 
     // Category filter
     if (category && String(category) !== "all") {
