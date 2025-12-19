@@ -55,6 +55,7 @@ export const TicketList: React.FC = () => {
         toast.success("Ticket eliminado");
         refetch();
       } catch (error) {
+        toast.error("Error al eliminar el ticket");
         console.error("Error deleting ticket:", error);
         toast.error("Error al eliminar el ticket");
       }
@@ -68,6 +69,7 @@ export const TicketList: React.FC = () => {
       refetch();
       toast.success("Ticket creado exitosamente");
     } catch (error) {
+      toast.error("Error al crear el ticket");
       console.error("Error creating ticket:", error);
       toast.error("Error al crear el ticket");
     }

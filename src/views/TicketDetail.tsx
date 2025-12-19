@@ -101,7 +101,9 @@ export const TicketDetail: React.FC = () => {
     if (!ticket) return;
     try {
       await api.put(`/tickets/${ticket.id}`, { status: newStatus });
-      setTicket((prev) => (prev ? { ...prev, status: newStatus } : null));
+      setTicket((prev) =>
+        prev ? { ...prev, status: newStatus as Ticket["status"] } : null
+      );
 
       if (newStatus === "RESOLVED") {
         confetti({
@@ -124,7 +126,7 @@ export const TicketDetail: React.FC = () => {
     if (!ticket) return;
     try {
       await api.put(`/tickets/${ticket.id}`, { priority: newPriority });
-      setTicket({ ...ticket, priority: newPriority as any });
+      setTicket({ ...ticket, priority: newPriority as Ticket["priority"] });
       toast.success("Prioridad actualizada");
     } catch (error) {
       console.error("Error updating priority:", error);
@@ -309,7 +311,7 @@ export const TicketDetail: React.FC = () => {
                   Descripción
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                  {(ticket as any).description || "Sin descripción"}
+                  {ticket.description || "Sin descripción"}
                 </p>
 
                 {/* Mobile-only Ticket Info (Hidden on XL screens where Sidebar is visible) */}
@@ -324,10 +326,10 @@ export const TicketDetail: React.FC = () => {
                       </span>
                       <div className="mt-1 flex items-center gap-2">
                         <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px]">
-                          {(ticket.assignee as any)?.name?.charAt(0) || "?"}
+                          {ticket.assignee?.name?.charAt(0) || "?"}
                         </div>
                         <span className="text-sm text-gray-900 dark:text-white">
-                          {(ticket.assignee as any)?.name || "Sin asignar"}
+                          {ticket.assignee?.name || "Sin asignar"}
                         </span>
                       </div>
                     </div>
@@ -336,9 +338,7 @@ export const TicketDetail: React.FC = () => {
                         Creado
                       </span>
                       <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                        {new Date((ticket as any).createdAt).toLocaleDateString(
-                          "es-ES"
-                        )}
+                        {new Date(ticket.createdAt).toLocaleDateString("es-ES")}
                       </p>
                     </div>
                     <div>
@@ -346,9 +346,7 @@ export const TicketDetail: React.FC = () => {
                         Actualizado
                       </span>
                       <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                        {new Date((ticket as any).updatedAt).toLocaleDateString(
-                          "es-ES"
-                        )}
+                        {new Date(ticket.updatedAt).toLocaleDateString("es-ES")}
                       </p>
                     </div>
                   </div>
@@ -361,7 +359,7 @@ export const TicketDetail: React.FC = () => {
                     </span>
                     <div className="flex items-center gap-2 mb-2">
                       <span className="font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
-                        {(ticket as any).creator?.name || "Desconocido"}
+                        {ticket.creator?.name || "Desconocido"}
                       </span>
                       {/* Sentiment Badge */}
                       <span
@@ -386,7 +384,7 @@ export const TicketDetail: React.FC = () => {
                       Email
                     </span>
                     <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                      {(ticket as any).creator?.email || "N/A"}
+                      {ticket.creator?.email || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -519,10 +517,9 @@ export const TicketDetail: React.FC = () => {
                 <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Archivos Adjuntos
                 </h4>
-                {(ticket as any).attachments &&
-                (ticket as any).attachments.length > 0 ? (
+                {ticket.attachments && ticket.attachments.length > 0 ? (
                   <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {(ticket as any).attachments.map((att: any) => (
+                    {ticket.attachments.map((att) => (
                       <li
                         key={att.id}
                         className="py-3 flex justify-between items-center"

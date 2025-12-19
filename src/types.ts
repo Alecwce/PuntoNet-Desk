@@ -9,19 +9,35 @@ export interface User {
 
 export interface Ticket {
   id: string;
-  subject: string; // Matches backend property
-  description: string;
-  category?: string;
-  client?: {
+  subject: string;
+  description?: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+  createdAt: string;
+  updatedAt: string;
+  creator?: {
     id: string;
     name: string;
     email: string;
+    avatar?: string;
   };
-  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  status: "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
-  assignee?: User;
-  createdAt: string;
-  updatedAt: string;
+  assignee?: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+  };
+  client?: {
+    id: string;
+    name: string;
+  };
+  attachments?: Array<{
+    id: string;
+    filename: string;
+    url: string;
+    size: number;
+    uploadedAt: string;
+  }>;
   messages?: ChatMessage[];
 }
 

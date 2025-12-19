@@ -216,10 +216,11 @@ export const CommandPalette = () => {
                         <li
                           key={article.id}
                           className="group flex cursor-pointer select-none items-center rounded-md p-2 hover:bg-gray-100"
-                          // For now just console log as we don't have KB route yet
-                          onClick={() =>
-                            console.log("Open article", article.id)
-                          }
+                          onClick={() => {
+                            // Navigate to KB section and open article
+                            navigate(`/kb`);
+                            close();
+                          }}
                         >
                           <Icon
                             name="article"
