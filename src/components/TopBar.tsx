@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Icon } from "./Icon";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { useNotifications } from "../hooks/useNotifications";
 
 interface TopBarProps {
   title?: string;
@@ -7,6 +9,9 @@ interface TopBarProps {
 }
 
 export const TopBar: React.FC<TopBarProps> = ({ title, onMenuClick }) => {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { unreadCount } = useNotifications(); // Fetches and keeps count updated
+
   const [isDarkMode, setIsDarkMode] = React.useState(() => {
     // Check local storage or system preference
     if (
@@ -34,7 +39,7 @@ export const TopBar: React.FC<TopBarProps> = ({ title, onMenuClick }) => {
   };
 
   return (
-    <header className="flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-gray-800 px-4 md:px-8 py-4 bg-white dark:bg-gray-900/50 shrink-0 gap-4">
+    <header className="flex items-center justify-between whitespace-nowrap border-b border-gray-200 dark:border-gray-800 px-4 md:px-8 py-4 bg-white dark:bg-gray-900/50 shrink-0 gap-4 relative z-40">
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
@@ -61,11 +66,23 @@ export const TopBar: React.FC<TopBarProps> = ({ title, onMenuClick }) => {
         )}
       </div>
 
-      <div className="flex items-center gap-3">
-        <button className="relative flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full size-10 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors">
+      <div className="flex items-center gap-3 relative">
+        <button
+          onClick={() => setShowNotifications(!showNotifications)}
+          className="relative flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full size-10 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
+        >
           <Icon name="notifications" />
-          <div className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900/50"></div>
+          {unreadCount > 0 && (
+            <div className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900/50"></div>
+          )}
         </button>
+
+        {/* Notification Dropdown */}
+        <NotificationDropdown
+          isOpen={showNotifications}
+          onClose={() => setShowNotifications(false)}
+        />
+
         <button
           onClick={toggleDarkMode}
           className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full size-10 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"

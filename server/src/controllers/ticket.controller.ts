@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
 import { Prisma } from "@prisma/client";
+import { notify } from "./notification.controller";
 
 export const getTickets = async (req: Request, res: Response) => {
   try {
@@ -102,6 +103,27 @@ export const createTicket = async (req: Request, res: Response) => {
       },
       include: { assignee: true, creator: true },
     });
+
+    // Notify Admins
+    try {
+      const staff = await prisma.user.findMany({
+        where: { role: { in: ["ADMIN", "AGENT"] } },
+        select: { id: true },
+      });
+      staff.forEach((member) => {
+        if (member.id !== user.id) {
+          notify(
+            member.id,
+            "Nuevo Ticket",
+            `Ticket #${ticket.subject} creado por ${user.name || "Usuario"}`,
+            "INFO"
+          );
+        }
+      });
+    } catch (e) {
+      console.error("Notification error", e);
+    }
+
     res.json(ticket);
   } catch (error) {
     console.error("Error creating ticket:", error);
@@ -129,6 +151,29 @@ export const updateTicket = async (req: Request, res: Response) => {
         messages: { include: { sender: true } },
       },
     });
+
+    // Notify Update
+    try {
+      if (assigneeId && ticket.assigneeId === assigneeId) {
+        notify(
+          assigneeId,
+          "Ticket Asignado",
+          `Te asignaron: ${ticket.subject}`,
+          "INFO"
+        );
+      }
+      if (status && ticket.status === status) {
+        notify(
+          ticket.creatorId,
+          "Estado Actualizado",
+          `Tu ticket "${ticket.subject}" ahora está: ${status}`,
+          "SUCCESS"
+        );
+      }
+    } catch (e) {
+      console.error("Notification error", e);
+    }
+
     res.json(ticket);
   } catch (error) {
     console.error("Error updating ticket:", error);

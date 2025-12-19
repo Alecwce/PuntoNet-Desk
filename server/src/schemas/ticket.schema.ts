@@ -14,9 +14,6 @@ export const createTicketSchema = z.object({
       required_error: "Priority is required",
       invalid_type_error: "Priority must be LOW, MEDIUM, HIGH, or CRITICAL",
     }),
-    creatorId: z
-      .string({ required_error: "Creator ID is required" })
-      .uuid("Creator ID must be a valid UUID"),
   }),
 });
 

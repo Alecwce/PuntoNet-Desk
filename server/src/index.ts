@@ -24,6 +24,7 @@ import userRoutes from "./routes/user.routes";
 import clientRoutes from "./routes/client.routes";
 import reportsRoutes from "./routes/reports.routes";
 import searchRoutes from "./routes/search.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 1️⃣ CORS CONFIGURATION - DEBE IR PRIMERO

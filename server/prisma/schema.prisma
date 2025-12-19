@@ -53,6 +53,22 @@ model User {
   messages              Message[]
   uploadedAttachments   Attachment[]
   knowledgeBaseArticles KnowledgeBase[]
+  notifications         Notification[]
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  recipientId String
+  recipient   User     @relation(fields: [recipientId], references: [id])
+  title       String
+  message     String
+  type        String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR
+  isRead      Boolean  @default(false)
+  link        String?
+  createdAt   DateTime @default(now())
+
+  @@index([recipientId])
+  @@index([isRead])
 }
 
 model Ticket {
