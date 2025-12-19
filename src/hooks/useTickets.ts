@@ -16,13 +16,28 @@ export const useTickets = (initialFilters: UseTicketsFilters = {}) => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Debounced search state to prevent API spam while typing
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+
+  // Sync debounced search with actual search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 500); // Wait 500ms after last keystroke
+
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
       const params: any = { page };
       // Just add params if they have value and are not "all"
       if (filters.limit) params.limit = filters.limit;
-      if (filters.search) params.search = filters.search;
+
+      // Use debouncedSearch for the API call instead of raw filters.search
+      if (debouncedSearch) params.search = debouncedSearch;
+
       if (filters.status && filters.status !== "all")
         params.status = filters.status;
       if (filters.priority && filters.priority !== "all")
@@ -41,21 +56,14 @@ export const useTickets = (initialFilters: UseTicketsFilters = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [filters, page]);
+  }, [debouncedSearch, filters.status, filters.priority, filters.limit, page]);
 
-  // Debounce search
+  // Trigger fetch when fetchTickets dependency changes
+  // This now happens immediately for Page/Status/Priority changes,
+  // but is delayed (debounced) for Search changes.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Reset page to 1 when filters change (except page itself, but page is not in filters object)
-      if (page !== 1 && filters !== initialFilters) {
-        // Logic to reset page on filter change could be complex inside effect.
-        // For simplicity, we just fetch. Ideally, setFilters should reset page.
-      }
-      fetchTickets();
-    }, 500); // Wait 500ms after last change
-
-    return () => clearTimeout(timer);
-  }, [filters, page, fetchTickets]);
+    fetchTickets();
+  }, [fetchTickets]);
 
   const updateFilters = (newFilters: Partial<UseTicketsFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
