@@ -94,6 +94,7 @@ model Ticket {
   @@index([assigneeId])
   @@index([creatorId])
   @@index([updatedAt])
+  @@index([createdAt])
 }
 
 model Message {
