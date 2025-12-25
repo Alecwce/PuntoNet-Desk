@@ -98,12 +98,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
   }, [onRefresh]);
 
   // Sort recent tickets from props (Limit to 5 for UI)
-  const recentTickets = [...tickets]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, 5);
+  // OPTIMIZATION: Memoize sorting to prevent O(n log n) operation on every render
+  const recentTickets = React.useMemo(() => {
+    return [...tickets]
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 5);
+  }, [tickets]);
 
   if (loading) {
     return (
@@ -362,7 +365,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-[10px] bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-full">
-                        {ticket.category || "General"}
+                        General
                       </span>
                       <span className="text-[10px] text-gray-400">
                         {new Date(ticket.createdAt).toLocaleDateString()}
