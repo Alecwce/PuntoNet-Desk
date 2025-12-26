@@ -94,6 +94,7 @@ model Ticket {
   @@index([assigneeId])
   @@index([creatorId])
   @@index([updatedAt])
+  @@index([createdAt])
 }
 
 model Message {
@@ -138,7 +139,7 @@ model KnowledgeBase {
   id        String   @id @default(uuid())
   title     String
   content   String   @db.Text
-  tags      String?  // JSON array as string
+  tags      String? // JSON array as string
   views     Int      @default(0)
   status    KBStatus @default(DRAFT)
   authorId  String
