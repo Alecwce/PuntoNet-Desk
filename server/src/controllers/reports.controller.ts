@@ -19,31 +19,53 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const whereClause =
       Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
 
-    // Get counts
+    // Get counts - Optimized with groupBy to reduce DB queries from ~10 to 4
     const [
-      totalTickets,
-      openTickets,
-      inProgressTickets,
-      resolvedTickets,
-      closedTickets,
-      totalUsers,
-      totalClients,
-      totalAgents,
-      totalKBArticles,
-      criticalTickets, // FIX: Destructure correctly
+      ticketStats,
+      userStats,
+      kbCount,
+      criticalCount
     ] = await Promise.all([
-      prisma.ticket.count({ where: whereClause }),
-      prisma.ticket.count({ where: { ...whereClause, status: "OPEN" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "IN_PROGRESS" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "RESOLVED" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "CLOSED" } }),
-      prisma.user.count(),
-      prisma.user.count({ where: { role: "CLIENT" } }),
-      prisma.user.count({ where: { role: "AGENT" } }),
+      // Group tickets by status
+      prisma.ticket.groupBy({
+        by: ["status"],
+        where: whereClause,
+        _count: { _all: true },
+      }),
+      // Group users by role
+      prisma.user.groupBy({
+        by: ["role"],
+        _count: { _all: true },
+      }),
+      // KB count
       prisma.knowledgeBase.count({ where: { status: "PUBLISHED" } }),
-      // FIX: Add Critical tickets count
+      // Critical tickets count (can't easily get from status group as it's a priority)
       prisma.ticket.count({ where: { ...whereClause, priority: "CRITICAL" } }),
     ]);
+
+    // Parse ticket stats
+    const ticketMap = ticketStats.reduce((acc, curr) => {
+      acc[curr.status] = curr._count._all;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const openTickets = ticketMap["OPEN"] || 0;
+    const inProgressTickets = ticketMap["IN_PROGRESS"] || 0;
+    const resolvedTickets = ticketMap["RESOLVED"] || 0;
+    const closedTickets = ticketMap["CLOSED"] || 0;
+    // Total is sum of all groups found (ensures accuracy even if new statuses are added)
+    const totalTickets = Object.values(ticketMap).reduce((a, b) => a + b, 0);
+
+    // Parse user stats
+    const userMap = userStats.reduce((acc, curr) => {
+      acc[curr.role] = curr._count._all;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalClients = userMap["CLIENT"] || 0;
+    const totalAgents = userMap["AGENT"] || 0;
+    // Total users is sum of all roles (assuming all users have a role)
+    const totalUsers = Object.values(userMap).reduce((a, b) => a + b, 0);
 
     res.json({
       tickets: {
@@ -52,7 +74,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         inProgress: inProgressTickets,
         resolved: resolvedTickets,
         closed: closedTickets,
-        critical: criticalTickets,
+        critical: criticalCount,
       },
       users: {
         total: totalUsers,
@@ -60,7 +82,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         agents: totalAgents,
       },
       knowledgeBase: {
-        published: totalKBArticles,
+        published: kbCount,
       },
     });
   } catch (error) {
