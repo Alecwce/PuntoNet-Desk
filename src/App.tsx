@@ -98,10 +98,9 @@ function App() {
   };
 
   useEffect(() => {
-    if (
-      user &&
-      (location.pathname === "/dashboard" || location.pathname === "/tickets")
-    ) {
+    // Only fetch for dashboard where tickets prop is used
+    // Optimized: TicketList handles its own fetching
+    if (user && location.pathname === "/dashboard") {
       fetchTickets();
     }
   }, [location.pathname]);
