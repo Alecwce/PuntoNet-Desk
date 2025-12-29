@@ -98,10 +98,8 @@ function App() {
   };
 
   useEffect(() => {
-    if (
-      user &&
-      (location.pathname === "/dashboard" || location.pathname === "/tickets")
-    ) {
+    // Only fetch for dashboard. TicketList fetches its own data.
+    if (user && location.pathname === "/dashboard") {
       fetchTickets();
     }
   }, [location.pathname]);
