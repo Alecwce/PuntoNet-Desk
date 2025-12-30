@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
@@ -76,6 +76,24 @@ export const TicketList: React.FC = () => {
   };
 
   const currentTickets = tickets;
+
+  // ⚡ Bolt Optimization: Memoize ticket grouping to avoid O(N*4) filtering on every render
+  const ticketsByStatus = useMemo(() => {
+    const grouped = {
+      OPEN: [] as typeof tickets,
+      IN_PROGRESS: [] as typeof tickets,
+      RESOLVED: [] as typeof tickets,
+      CLOSED: [] as typeof tickets,
+    };
+
+    currentTickets.forEach((ticket) => {
+      const status = ticket.status as keyof typeof grouped;
+      if (grouped[status]) {
+        grouped[status].push(ticket);
+      }
+    });
+    return grouped;
+  }, [currentTickets]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -233,9 +251,7 @@ export const TicketList: React.FC = () => {
           <div className="flex gap-4 h-full min-w-[1200px] px-1">
             {(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const).map(
               (status) => {
-                const columnTickets = tickets.filter(
-                  (t) => t.status === status
-                );
+                const columnTickets = ticketsByStatus[status];
                 const statusStyles = {
                   OPEN: "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30",
                   IN_PROGRESS:
