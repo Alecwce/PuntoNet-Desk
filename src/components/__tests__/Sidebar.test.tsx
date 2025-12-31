@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Sidebar } from "../Sidebar";
 import { BrowserRouter } from "react-router-dom";
+import { User } from "../../types";
 
 // Mock Icon
 vi.mock("../Icon", () => ({
@@ -25,31 +26,36 @@ vi.mock("react-router-dom", async () => {
 describe("Sidebar Component", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
   });
 
   const onLogoutMock = vi.fn();
 
-  it("renders nothing if no user in localStorage", () => {
-    // Modify based on implementation - Sidebar might render but filtered items
-    // Current implementation reads user from localStorage inside component
+  // Helper to create mock users
+  const createMockUser = (role: "ADMIN" | "AGENT" | "CLIENT"): User => ({
+    id: "1",
+    name: "Test User",
+    email: "test@example.com",
+    role,
+    avatar: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isTwoFactorEnabled: false
+  });
+
+  it("renders structure even if user is null (though items might be hidden)", () => {
     render(
       <BrowserRouter>
-        <Sidebar onLogout={onLogoutMock} />
+        <Sidebar user={null} onLogout={onLogoutMock} />
       </BrowserRouter>
     );
-    // Should render structure but maybe no items?
     expect(screen.getByText("PuntoNet")).toBeInTheDocument();
   });
 
   it("renders menu items for ADMIN", () => {
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ name: "Admin User", role: "ADMIN" })
-    );
+    const user = createMockUser("ADMIN");
     render(
       <BrowserRouter>
-        <Sidebar onLogout={onLogoutMock} />
+        <Sidebar user={user} onLogout={onLogoutMock} />
       </BrowserRouter>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
@@ -57,13 +63,10 @@ describe("Sidebar Component", () => {
   });
 
   it("renders menu items for CLIENT", () => {
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ name: "Client User", role: "CLIENT" })
-    );
+    const user = createMockUser("CLIENT");
     render(
       <BrowserRouter>
-        <Sidebar onLogout={onLogoutMock} />
+        <Sidebar user={user} onLogout={onLogoutMock} />
       </BrowserRouter>
     );
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
@@ -71,13 +74,10 @@ describe("Sidebar Component", () => {
   });
 
   it("navigates on click", () => {
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ name: "Admin User", role: "ADMIN" })
-    );
+    const user = createMockUser("ADMIN");
     render(
       <BrowserRouter>
-        <Sidebar onLogout={onLogoutMock} />
+        <Sidebar user={user} onLogout={onLogoutMock} />
       </BrowserRouter>
     );
 
@@ -86,13 +86,10 @@ describe("Sidebar Component", () => {
   });
 
   it("calls onLogout", () => {
-    localStorage.setItem(
-      "user",
-      JSON.stringify({ name: "Admin User", role: "ADMIN" })
-    );
+    const user = createMockUser("ADMIN");
     render(
       <BrowserRouter>
-        <Sidebar onLogout={onLogoutMock} />
+        <Sidebar user={user} onLogout={onLogoutMock} />
       </BrowserRouter>
     );
 
