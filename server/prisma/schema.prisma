@@ -106,6 +106,10 @@ model Message {
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
+  // Optimization: Add indexes for foreign keys to improve query performance
+  @@index([ticketId])
+  @@index([senderId])
 }
 
 model Attachment {
@@ -121,6 +125,10 @@ model Attachment {
 
   uploaderId String
   uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  // Optimization: Add indexes for foreign keys to improve query performance
+  @@index([ticketId])
+  @@index([uploaderId])
 }
 
 model TicketTemplate {
