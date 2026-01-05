@@ -20,30 +20,58 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
 
     // Get counts
+    // Optimized: Use groupBy to reduce 10 DB queries to 3
     const [
-      totalTickets,
-      openTickets,
-      inProgressTickets,
-      resolvedTickets,
-      closedTickets,
-      totalUsers,
-      totalClients,
-      totalAgents,
-      totalKBArticles,
-      criticalTickets, // FIX: Destructure correctly
+      ticketGroups,
+      userGroups,
+      totalKBArticles
     ] = await Promise.all([
-      prisma.ticket.count({ where: whereClause }),
-      prisma.ticket.count({ where: { ...whereClause, status: "OPEN" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "IN_PROGRESS" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "RESOLVED" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "CLOSED" } }),
-      prisma.user.count(),
-      prisma.user.count({ where: { role: "CLIENT" } }),
-      prisma.user.count({ where: { role: "AGENT" } }),
+      // 1. Group tickets by status and priority
+      prisma.ticket.groupBy({
+        by: ['status', 'priority'],
+        where: whereClause,
+        _count: { id: true },
+      }),
+      // 2. Group users by role
+      prisma.user.groupBy({
+        by: ['role'],
+        _count: { id: true },
+      }),
+      // 3. Count KB articles (simple count)
       prisma.knowledgeBase.count({ where: { status: "PUBLISHED" } }),
-      // FIX: Add Critical tickets count
-      prisma.ticket.count({ where: { ...whereClause, priority: "CRITICAL" } }),
     ]);
+
+    // Calculate ticket stats in memory
+    let totalTickets = 0;
+    let openTickets = 0;
+    let inProgressTickets = 0;
+    let resolvedTickets = 0;
+    let closedTickets = 0;
+    let criticalTickets = 0;
+
+    ticketGroups.forEach(group => {
+      const count = group._count.id;
+      totalTickets += count;
+
+      if (group.status === "OPEN") openTickets += count;
+      if (group.status === "IN_PROGRESS") inProgressTickets += count;
+      if (group.status === "RESOLVED") resolvedTickets += count;
+      if (group.status === "CLOSED") closedTickets += count;
+
+      if (group.priority === "CRITICAL") criticalTickets += count;
+    });
+
+    // Calculate user stats in memory
+    let totalUsers = 0;
+    let totalClients = 0;
+    let totalAgents = 0;
+
+    userGroups.forEach(group => {
+      const count = group._count.id;
+      totalUsers += count;
+      if (group.role === "CLIENT") totalClients += count;
+      if (group.role === "AGENT") totalAgents += count;
+    });
 
     res.json({
       tickets: {
