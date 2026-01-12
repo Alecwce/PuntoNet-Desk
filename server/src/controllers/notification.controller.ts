@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
 
-// === HELPER FUNCTION ===
+// === HELPER FUNCTIONS ===
+
 // Use this to send notifications from other controllers
 export const notify = async (
   recipientId: string,
@@ -28,6 +29,36 @@ export const notify = async (
   }
 };
 
+// Optimization: Batch send notifications to multiple recipients
+export const notifyMany = async (
+  recipientIds: string[],
+  title: string,
+  message: string,
+  type: "INFO" | "SUCCESS" | "WARNING" | "ERROR" = "INFO",
+  link?: string
+) => {
+  if (!recipientIds.length) return { count: 0 };
+
+  try {
+    const notificationsData = recipientIds.map((recipientId) => ({
+      recipientId,
+      title,
+      message,
+      type,
+      link: link || null, // Handle optional field
+    }));
+
+    const result = await prisma.notification.createMany({
+      data: notificationsData,
+    });
+    console.log(`🔔 Batch notifications sent: ${result.count}`);
+    return result;
+  } catch (error) {
+    console.error("❌ Error sending batch notifications:", error);
+    return null;
+  }
+};
+
 // === API CONTROLLERS ===
 
 export const getNotifications = async (req: Request, res: Response) => {
@@ -47,7 +78,6 @@ export const getNotifications = async (req: Request, res: Response) => {
 
     res.json({ notifications, unreadCount });
   } catch (error) {
-    console.error("Error fetching notifications:", error);
     console.error("Error fetching notifications:", error);
     res.status(500).json({
       error: "Failed to fetch notifications",
