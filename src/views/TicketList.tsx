@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/components/Icon";
 import { CreateTicketModal } from "@/components/CreateTicketModal";
@@ -11,6 +11,58 @@ import { formatRelativeDate } from "../lib/dateUtils";
 import { exportTicketsToExcel } from "../lib/excelExport";
 import { calculateSLA } from "../lib/slaUtils";
 import { analyzeSentiment } from "../lib/sentiment";
+import { Ticket } from "@/types";
+
+// ⚡ Bolt: Static constants moved outside component to prevent re-creation on every render
+const KANBAN_COLUMNS = ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
+
+const STATUS_TITLES: Record<string, string> = {
+  OPEN: "Abierto",
+  IN_PROGRESS: "En Progreso",
+  RESOLVED: "Resuelto",
+  CLOSED: "Cerrado",
+};
+
+const STATUS_STYLES: Record<string, string> = {
+  OPEN: "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30",
+  IN_PROGRESS:
+    "bg-yellow-50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/30",
+  RESOLVED:
+    "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30",
+  CLOSED:
+    "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700",
+};
+
+// ⚡ Bolt: Helper functions moved outside component
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "OPEN":
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
+    case "IN_PROGRESS":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
+    case "RESOLVED":
+      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+    case "CLOSED":
+      return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+};
+
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case "CRITICAL":
+      return "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400";
+    case "HIGH":
+      return "text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400";
+    case "MEDIUM":
+      return "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400";
+    case "LOW":
+      return "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400";
+    default:
+      return "text-gray-600 bg-gray-50";
+  }
+};
 
 export const TicketList: React.FC = () => {
   const navigate = useNavigate();
@@ -75,37 +127,26 @@ export const TicketList: React.FC = () => {
     }
   };
 
-  const currentTickets = tickets;
+  // ⚡ Bolt: Memoize ticket grouping to avoid O(N*S) filtering on every render.
+  // Reduces complexity to O(N) and ensures stable object references.
+  const ticketsByStatus = useMemo(() => {
+    const groups: Record<string, typeof tickets> = {
+      OPEN: [],
+      IN_PROGRESS: [],
+      RESOLVED: [],
+      CLOSED: [],
+    };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "OPEN":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300";
-      case "IN_PROGRESS":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
-      case "RESOLVED":
-        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
-      case "CLOSED":
-        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
+    // Single pass through tickets array (O(N))
+    tickets.forEach((ticket) => {
+      // Safety check in case ticket has a status not in our expected keys
+      if (groups[ticket.status]) {
+        groups[ticket.status].push(ticket);
+      }
+    });
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "CRITICAL":
-        return "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400";
-      case "HIGH":
-        return "text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400";
-      case "MEDIUM":
-        return "text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20 dark:text-yellow-400";
-      case "LOW":
-        return "text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400";
-      default:
-        return "text-gray-600 bg-gray-50";
-    }
-  };
+    return groups;
+  }, [tickets]);
 
   return (
     <div className="p-8 h-full flex flex-col gap-6">
@@ -231,130 +272,110 @@ export const TicketList: React.FC = () => {
       {isKanbanView ? (
         <div className="flex-1 overflow-x-auto pb-4">
           <div className="flex gap-4 h-full min-w-[1200px] px-1">
-            {(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const).map(
-              (status) => {
-                const columnTickets = tickets.filter(
-                  (t) => t.status === status
-                );
-                const statusStyles = {
-                  OPEN: "bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30",
-                  IN_PROGRESS:
-                    "bg-yellow-50 dark:bg-yellow-900/10 border-yellow-100 dark:border-yellow-900/30",
-                  RESOLVED:
-                    "bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30",
-                  CLOSED:
-                    "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700",
-                };
+            {KANBAN_COLUMNS.map((status) => {
+              // ⚡ Bolt: Use memoized grouped tickets
+              const columnTickets = ticketsByStatus[status];
 
-                const titles = {
-                  OPEN: "Abierto",
-                  IN_PROGRESS: "En Progreso",
-                  RESOLVED: "Resuelto",
-                  CLOSED: "Cerrado",
-                };
+              return (
+                <div
+                  key={status}
+                  className={`flex-1 rounded-xl border flex flex-col ${STATUS_STYLES[status]}`}
+                >
+                  {/* Column Header */}
+                  <div className="p-3 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-t-xl">
+                    <h3 className="font-semibold text-gray-700 dark:text-gray-200">
+                      {STATUS_TITLES[status]}
+                    </h3>
+                    <span className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 shadow-sm">
+                      {columnTickets.length}
+                    </span>
+                  </div>
 
-                return (
-                  <div
-                    key={status}
-                    className={`flex-1 rounded-xl border flex flex-col ${statusStyles[status]}`}
-                  >
-                    {/* Column Header */}
-                    <div className="p-3 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-t-xl">
-                      <h3 className="font-semibold text-gray-700 dark:text-gray-200">
-                        {titles[status]}
-                      </h3>
-                      <span className="bg-white dark:bg-gray-700 px-2 py-0.5 rounded-full text-xs font-bold text-gray-500 shadow-sm">
-                        {columnTickets.length}
-                      </span>
-                    </div>
-
-                    {/* Column Content */}
-                    <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
-                      {columnTickets.map((ticket) => {
-                        const sla = calculateSLA(ticket);
-                        return (
+                  {/* Column Content */}
+                  <div className="p-3 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
+                    {columnTickets.map((ticket) => {
+                      const sla = calculateSLA(ticket);
+                      return (
+                        <div
+                          key={ticket.id}
+                          onClick={() => navigate(`/tickets/${ticket.id}`)}
+                          className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
+                        >
+                          {/* Priority Stripe */}
                           <div
-                            key={ticket.id}
-                            onClick={() => navigate(`/tickets/${ticket.id}`)}
-                            className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer group relative overflow-hidden"
-                          >
-                            {/* Priority Stripe */}
-                            <div
-                              className={`absolute left-0 top-0 bottom-0 w-1 ${
-                                ticket.priority === "CRITICAL"
-                                  ? "bg-red-500"
-                                  : ticket.priority === "HIGH"
-                                  ? "bg-orange-500"
-                                  : ticket.priority === "MEDIUM"
-                                  ? "bg-yellow-500"
-                                  : "bg-blue-500"
-                              }`}
-                            />
+                            className={`absolute left-0 top-0 bottom-0 w-1 ${
+                              ticket.priority === "CRITICAL"
+                                ? "bg-red-500"
+                                : ticket.priority === "HIGH"
+                                ? "bg-orange-500"
+                                : ticket.priority === "MEDIUM"
+                                ? "bg-yellow-500"
+                                : "bg-blue-500"
+                            }`}
+                          />
 
-                            <div className="pl-2">
-                              {/* Subject */}
-                              <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-primary transition-colors flex items-center gap-1">
-                                {ticket.subject}
-                                <span
-                                  title={`Sentimiento: ${
-                                    analyzeSentiment(
-                                      ticket.description || ticket.subject
-                                    ).label
-                                  }`}
-                                  className="text-[10px]"
-                                >
-                                  {
-                                    analyzeSentiment(
-                                      ticket.description || ticket.subject
-                                    ).emoji
-                                  }
+                          <div className="pl-2">
+                            {/* Subject */}
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 mb-1 group-hover:text-primary transition-colors flex items-center gap-1">
+                              {ticket.subject}
+                              <span
+                                title={`Sentimiento: ${
+                                  analyzeSentiment(
+                                    ticket.description || ticket.subject
+                                  ).label
+                                }`}
+                                className="text-[10px]"
+                              >
+                                {
+                                  analyzeSentiment(
+                                    ticket.description || ticket.subject
+                                  ).emoji
+                                }
+                              </span>
+                            </h4>
+
+                            {/* Description Snippet */}
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
+                              {ticket.description}
+                            </p>
+
+                            {/* Footer: User & SLA */}
+                            <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700/50 pt-2">
+                              <div className="flex items-center gap-1.5">
+                                <div
+                                  className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
+                                  style={{
+                                    backgroundImage: `url("https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                      ticket.client?.name || "U"
+                                    )}&background=random")`,
+                                  }}
+                                />
+                                <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate max-w-[80px]">
+                                  {ticket.client?.name || "Usuario"}
                                 </span>
-                              </h4>
-
-                              {/* Description Snippet */}
-                              <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-3">
-                                {ticket.description}
-                              </p>
-
-                              {/* Footer: User & SLA */}
-                              <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700/50 pt-2">
-                                <div className="flex items-center gap-1.5">
-                                  <div
-                                    className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 bg-cover bg-center"
-                                    style={{
-                                      backgroundImage: `url("https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                        ticket.client?.name || "U"
-                                      )}&background=random")`,
-                                    }}
-                                  />
-                                  <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate max-w-[80px]">
-                                    {ticket.client?.name || "Usuario"}
-                                  </span>
-                                </div>
-
-                                {/* SLA Badge */}
-                                {status !== "CLOSED" &&
-                                  status !== "RESOLVED" && (
-                                    <div
-                                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${sla.color}`}
-                                    >
-                                      <Icon
-                                        name="schedule"
-                                        className="text-[10px]"
-                                      />
-                                      <span>{sla.label.split(" ")[0]}</span>
-                                    </div>
-                                  )}
                               </div>
+
+                              {/* SLA Badge */}
+                              {status !== "CLOSED" && status !== "RESOLVED" && (
+                                <div
+                                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium text-white ${sla.color}`}
+                                >
+                                  <Icon
+                                    name="schedule"
+                                    className="text-[10px]"
+                                  />
+                                  <span>{sla.label.split(" ")[0]}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              }
-            )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -420,7 +441,7 @@ export const TicketList: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {currentTickets.map((ticket) => (
+                    {tickets.map((ticket) => (
                       <tr
                         key={ticket.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700/50 active:bg-gray-100 dark:active:bg-gray-700 cursor-pointer transition-colors group"
@@ -547,7 +568,7 @@ export const TicketList: React.FC = () => {
 
               {/* Mobile Card View */}
               <div className="md:hidden flex-1 overflow-y-auto p-4 space-y-3">
-                {currentTickets.map((ticket) => (
+                {tickets.map((ticket) => (
                   <div
                     key={ticket.id}
                     onClick={() => navigate(`/tickets/${ticket.id}`)}
