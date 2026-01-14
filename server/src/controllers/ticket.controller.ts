@@ -3,6 +3,15 @@ import { prisma } from "../index";
 import { Prisma } from "@prisma/client";
 import { notify } from "./notification.controller";
 
+// Define safe user fields to select (excluding password, 2FA secrets, etc.)
+const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  avatar: true,
+};
+
 export const getTickets = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -43,7 +52,10 @@ export const getTickets = async (req: Request, res: Response) => {
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
-        include: { assignee: true, creator: true },
+        include: {
+          assignee: { select: userSelect },
+          creator: { select: userSelect },
+        },
         orderBy: { updatedAt: "desc" },
         skip,
         take: limit,
@@ -73,10 +85,10 @@ export const getTicketById = async (req: Request, res: Response) => {
     const ticket = await prisma.ticket.findUnique({
       where: { id },
       include: {
-        assignee: true,
-        creator: true,
+        assignee: { select: userSelect },
+        creator: { select: userSelect },
         messages: {
-          include: { sender: true },
+          include: { sender: { select: userSelect } },
           orderBy: { createdAt: "asc" },
         },
         attachments: true,
@@ -118,7 +130,10 @@ export const createTicket = async (req: Request, res: Response) => {
         creatorId: user.id,
         status: "OPEN",
       },
-      include: { assignee: true, creator: true },
+      include: {
+        assignee: { select: userSelect },
+        creator: { select: userSelect },
+      },
     });
 
     // Notify Admins
@@ -198,9 +213,11 @@ export const updateTicket = async (req: Request, res: Response) => {
         assigneeId: user.role === "CLIENT" ? undefined : assigneeId, // Double safety
       },
       include: {
-        assignee: true,
-        creator: true,
-        messages: { include: { sender: true } },
+        assignee: { select: userSelect },
+        creator: { select: userSelect },
+        messages: {
+          include: { sender: { select: userSelect } },
+        },
       },
     });
 
@@ -268,7 +285,7 @@ export const addMessage = async (req: Request, res: Response) => {
         ticketId: id,
         senderId,
       },
-      include: { sender: true },
+      include: { sender: { select: userSelect } },
     });
 
     // Update ticket timestamp
