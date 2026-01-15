@@ -3,6 +3,15 @@ import { prisma } from "../index";
 import { Prisma } from "@prisma/client";
 import { notify } from "./notification.controller";
 
+// Safe user selection to avoid exposing sensitive data like passwords
+const userSafeSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  avatar: true,
+};
+
 export const getTickets = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -43,7 +52,10 @@ export const getTickets = async (req: Request, res: Response) => {
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
-        include: { assignee: true, creator: true },
+        include: {
+          assignee: { select: userSafeSelect },
+          creator: { select: userSafeSelect },
+        },
         orderBy: { updatedAt: "desc" },
         skip,
         take: limit,
@@ -73,10 +85,10 @@ export const getTicketById = async (req: Request, res: Response) => {
     const ticket = await prisma.ticket.findUnique({
       where: { id },
       include: {
-        assignee: true,
-        creator: true,
+        assignee: { select: userSafeSelect },
+        creator: { select: userSafeSelect },
         messages: {
-          include: { sender: true },
+          include: { sender: { select: userSafeSelect } },
           orderBy: { createdAt: "asc" },
         },
         attachments: true,
@@ -118,7 +130,10 @@ export const createTicket = async (req: Request, res: Response) => {
         creatorId: user.id,
         status: "OPEN",
       },
-      include: { assignee: true, creator: true },
+      include: {
+        assignee: { select: userSafeSelect },
+        creator: { select: userSafeSelect },
+      },
     });
 
     // Notify Admins
@@ -177,10 +192,6 @@ export const updateTicket = async (req: Request, res: Response) => {
       }
 
       // 3. Prevent sensitive status updates (only allow canceling/closing if needed, or block completely)
-      // Assuming strict rule: "NO puede modificar... status sensible" implies blocking status changes that aren't controlled.
-      // For now, let's allow them to 'RESOLVED' or 'CLOSED' if they want to close it?
-      // User prompt says "NO puede modificar... status sensible".
-      // I will STRICTLY block status changes for CLIENT to be safe and compliant with the "Security" focus.
       if (status && status !== ticket.status) {
         return res.status(403).json({
           error: "Forbidden: Clients cannot modify status",
@@ -198,9 +209,9 @@ export const updateTicket = async (req: Request, res: Response) => {
         assigneeId: user.role === "CLIENT" ? undefined : assigneeId, // Double safety
       },
       include: {
-        assignee: true,
-        creator: true,
-        messages: { include: { sender: true } },
+        assignee: { select: userSafeSelect },
+        creator: { select: userSafeSelect },
+        messages: { include: { sender: { select: userSafeSelect } } },
       },
     });
 
@@ -268,7 +279,7 @@ export const addMessage = async (req: Request, res: Response) => {
         ticketId: id,
         senderId,
       },
-      include: { sender: true },
+      include: { sender: { select: userSafeSelect } },
     });
 
     // Update ticket timestamp
