@@ -98,12 +98,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ tickets, onRefresh }) => {
   }, [onRefresh]);
 
   // Sort recent tickets from props (Limit to 5 for UI)
-  const recentTickets = [...tickets]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, 5);
+  const recentTickets = React.useMemo(
+    () =>
+      [...tickets]
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        .slice(0, 5),
+    [tickets]
+  );
 
   if (loading) {
     return (

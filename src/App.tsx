@@ -98,10 +98,7 @@ function App() {
   };
 
   useEffect(() => {
-    if (
-      user &&
-      (location.pathname === "/dashboard" || location.pathname === "/tickets")
-    ) {
+    if (user && location.pathname === "/dashboard") {
       fetchTickets();
     }
   }, [location.pathname]);
