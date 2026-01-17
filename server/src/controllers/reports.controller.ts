@@ -19,45 +19,72 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const whereClause =
       Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
 
-    // Get counts
-    const [
-      totalTickets,
-      openTickets,
-      inProgressTickets,
-      resolvedTickets,
-      closedTickets,
-      totalUsers,
-      totalClients,
-      totalAgents,
-      totalKBArticles,
-      criticalTickets, // FIX: Destructure correctly
-    ] = await Promise.all([
-      prisma.ticket.count({ where: whereClause }),
-      prisma.ticket.count({ where: { ...whereClause, status: "OPEN" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "IN_PROGRESS" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "RESOLVED" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "CLOSED" } }),
-      prisma.user.count(),
-      prisma.user.count({ where: { role: "CLIENT" } }),
-      prisma.user.count({ where: { role: "AGENT" } }),
-      prisma.knowledgeBase.count({ where: { status: "PUBLISHED" } }),
-      // FIX: Add Critical tickets count
-      prisma.ticket.count({ where: { ...whereClause, priority: "CRITICAL" } }),
-    ]);
+    // Get counts (Optimized with groupBy)
+    const [ticketStats, userStats, totalKBArticles, criticalTickets] =
+      await Promise.all([
+        // Single query for all status counts
+        prisma.ticket.groupBy({
+          by: ["status"],
+          where: whereClause,
+          _count: { id: true },
+        }),
+        // Single query for all user role counts
+        prisma.user.groupBy({
+          by: ["role"],
+          _count: { id: true },
+        }),
+        prisma.knowledgeBase.count({ where: { status: "PUBLISHED" } }),
+        prisma.ticket.count({
+          where: { ...whereClause, priority: "CRITICAL" },
+        }),
+      ]);
+
+    // Process Ticket Stats
+    const ticketCounts = {
+      OPEN: 0,
+      IN_PROGRESS: 0,
+      RESOLVED: 0,
+      CLOSED: 0,
+    };
+    let totalTickets = 0;
+
+    ticketStats.forEach((group) => {
+      const count = group._count.id;
+      if (group.status in ticketCounts) {
+        ticketCounts[group.status as keyof typeof ticketCounts] = count;
+      }
+      totalTickets += count;
+    });
+
+    // Process User Stats
+    const userCounts = {
+      CLIENT: 0,
+      AGENT: 0,
+      ADMIN: 0,
+    };
+    let totalUsers = 0;
+
+    userStats.forEach((group) => {
+      const count = group._count.id;
+      if (group.role in userCounts) {
+        userCounts[group.role as keyof typeof userCounts] = count;
+      }
+      totalUsers += count;
+    });
 
     res.json({
       tickets: {
         total: totalTickets,
-        open: openTickets,
-        inProgress: inProgressTickets,
-        resolved: resolvedTickets,
-        closed: closedTickets,
+        open: ticketCounts.OPEN,
+        inProgress: ticketCounts.IN_PROGRESS,
+        resolved: ticketCounts.RESOLVED,
+        closed: ticketCounts.CLOSED,
         critical: criticalTickets,
       },
       users: {
         total: totalUsers,
-        clients: totalClients,
-        agents: totalAgents,
+        clients: userCounts.CLIENT,
+        agents: userCounts.AGENT,
       },
       knowledgeBase: {
         published: totalKBArticles,
