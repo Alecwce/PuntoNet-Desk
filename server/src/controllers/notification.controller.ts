@@ -28,6 +28,34 @@ export const notify = async (
   }
 };
 
+export const notifyMany = async (
+  recipientIds: string[],
+  title: string,
+  message: string,
+  type: "INFO" | "SUCCESS" | "WARNING" | "ERROR" = "INFO",
+  link?: string
+) => {
+  if (recipientIds.length === 0) return;
+  try {
+    const notifications = await prisma.notification.createMany({
+      data: recipientIds.map((id) => ({
+        recipientId: id,
+        title,
+        message,
+        type,
+        link,
+      })),
+    });
+    console.log(
+      `🔔 Batch notification sent to ${recipientIds.length} users: ${title}`
+    );
+    return notifications;
+  } catch (error) {
+    console.error("❌ Error sending batch notification:", error);
+    return null;
+  }
+};
+
 // === API CONTROLLERS ===
 
 export const getNotifications = async (req: Request, res: Response) => {
