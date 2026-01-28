@@ -98,10 +98,8 @@ function App() {
   };
 
   useEffect(() => {
-    if (
-      user &&
-      (location.pathname === "/dashboard" || location.pathname === "/tickets")
-    ) {
+    if (user && location.pathname === "/dashboard") {
+      // Optimization: Only fetch recent tickets for Dashboard. TicketList fetches its own data.
       fetchTickets();
     }
   }, [location.pathname]);
