@@ -3,6 +3,14 @@ import { prisma } from "../index";
 import { Prisma } from "@prisma/client";
 import { notify } from "./notification.controller";
 
+const userSafeSelect = {
+  id: true,
+  name: true,
+  email: true,
+  avatar: true,
+  role: true,
+};
+
 export const getTickets = async (req: Request, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -43,7 +51,10 @@ export const getTickets = async (req: Request, res: Response) => {
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
-        include: { assignee: true, creator: true },
+        include: {
+          assignee: { select: userSafeSelect },
+          creator: { select: userSafeSelect },
+        },
         orderBy: { updatedAt: "desc" },
         skip,
         take: limit,
@@ -73,10 +84,10 @@ export const getTicketById = async (req: Request, res: Response) => {
     const ticket = await prisma.ticket.findUnique({
       where: { id },
       include: {
-        assignee: true,
-        creator: true,
+        assignee: { select: userSafeSelect },
+        creator: { select: userSafeSelect },
         messages: {
-          include: { sender: true },
+          include: { sender: { select: userSafeSelect } },
           orderBy: { createdAt: "asc" },
         },
         attachments: true,
@@ -118,7 +129,10 @@ export const createTicket = async (req: Request, res: Response) => {
         creatorId: user.id,
         status: "OPEN",
       },
-      include: { assignee: true, creator: true },
+      include: {
+        assignee: { select: userSafeSelect },
+        creator: { select: userSafeSelect },
+      },
     });
 
     // Notify Admins
@@ -198,9 +212,9 @@ export const updateTicket = async (req: Request, res: Response) => {
         assigneeId: user.role === "CLIENT" ? undefined : assigneeId, // Double safety
       },
       include: {
-        assignee: true,
-        creator: true,
-        messages: { include: { sender: true } },
+        assignee: { select: userSafeSelect },
+        creator: { select: userSafeSelect },
+        messages: { include: { sender: { select: userSafeSelect } } },
       },
     });
 
@@ -268,7 +282,7 @@ export const addMessage = async (req: Request, res: Response) => {
         ticketId: id,
         senderId,
       },
-      include: { sender: true },
+      include: { sender: { select: userSafeSelect } },
     });
 
     // Update ticket timestamp
