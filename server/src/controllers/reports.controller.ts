@@ -20,30 +20,55 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       Object.keys(dateFilter).length > 0 ? { createdAt: dateFilter } : {};
 
     // Get counts
+    // ⚡ Bolt Optimization: Use groupBy to reduce multiple COUNT queries to single queries
     const [
-      totalTickets,
-      openTickets,
-      inProgressTickets,
-      resolvedTickets,
-      closedTickets,
-      totalUsers,
-      totalClients,
-      totalAgents,
+      ticketStats,
+      userStats,
+      totalUsers, // Keep specific count for safety/completeness
       totalKBArticles,
-      criticalTickets, // FIX: Destructure correctly
+      criticalTickets, // Specific priority query
     ] = await Promise.all([
-      prisma.ticket.count({ where: whereClause }),
-      prisma.ticket.count({ where: { ...whereClause, status: "OPEN" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "IN_PROGRESS" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "RESOLVED" } }),
-      prisma.ticket.count({ where: { ...whereClause, status: "CLOSED" } }),
+      // Group tickets by status (Replaces 4-5 separate COUNT queries)
+      prisma.ticket.groupBy({
+        by: ["status"],
+        where: whereClause,
+        _count: { id: true },
+      }),
+      // Group users by role (Replaces 2-3 separate COUNT queries)
+      prisma.user.groupBy({
+        by: ["role"],
+        _count: { id: true },
+      }),
       prisma.user.count(),
-      prisma.user.count({ where: { role: "CLIENT" } }),
-      prisma.user.count({ where: { role: "AGENT" } }),
       prisma.knowledgeBase.count({ where: { status: "PUBLISHED" } }),
-      // FIX: Add Critical tickets count
+      // Critical tickets
       prisma.ticket.count({ where: { ...whereClause, priority: "CRITICAL" } }),
     ]);
+
+    // Process Ticket Stats
+    const ticketCounts = ticketStats.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Calculate totals from grouped data
+    // Note: totalTickets is sum of all status counts + potentially tickets without status?
+    // Status is non-nullable enum, so sum is safe.
+    // If whereClause is present, it applies to groupBy, so we get filtered counts.
+    const totalTickets = Object.values(ticketCounts).reduce((a, b) => a + b, 0);
+    const openTickets = ticketCounts["OPEN"] || 0;
+    const inProgressTickets = ticketCounts["IN_PROGRESS"] || 0;
+    const resolvedTickets = ticketCounts["RESOLVED"] || 0;
+    const closedTickets = ticketCounts["CLOSED"] || 0;
+
+    // Process User Stats
+    const userCounts = userStats.reduce((acc, curr) => {
+      acc[curr.role] = curr._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalClients = userCounts["CLIENT"] || 0;
+    const totalAgents = userCounts["AGENT"] || 0;
 
     res.json({
       tickets: {
