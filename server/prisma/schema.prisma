@@ -106,6 +106,8 @@ model Message {
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
+  @@index([ticketId])
 }
 
 model Attachment {
@@ -121,6 +123,8 @@ model Attachment {
 
   uploaderId String
   uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  @@index([ticketId])
 }
 
 model TicketTemplate {
@@ -138,7 +142,7 @@ model KnowledgeBase {
   id        String   @id @default(uuid())
   title     String
   content   String   @db.Text
-  tags      String?  // JSON array as string
+  tags      String? // JSON array as string
   views     Int      @default(0)
   status    KBStatus @default(DRAFT)
   authorId  String
