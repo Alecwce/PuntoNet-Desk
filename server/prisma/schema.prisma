@@ -106,6 +106,9 @@ model Message {
 
   senderId String
   sender   User   @relation(fields: [senderId], references: [id])
+
+  // Optimization: frequent lookup by ticketId
+  @@index([ticketId])
 }
 
 model Attachment {
@@ -121,6 +124,9 @@ model Attachment {
 
   uploaderId String
   uploader   User   @relation(fields: [uploaderId], references: [id])
+
+  // Optimization: frequent lookup by ticketId
+  @@index([ticketId])
 }
 
 model TicketTemplate {
