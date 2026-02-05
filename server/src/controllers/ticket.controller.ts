@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../index";
 import { Prisma } from "@prisma/client";
-import { notify } from "./notification.controller";
+import { notify, notifyMany } from "./notification.controller";
 
 export const getTickets = async (req: Request, res: Response) => {
   try {
@@ -127,16 +127,19 @@ export const createTicket = async (req: Request, res: Response) => {
         where: { role: { in: ["ADMIN", "AGENT"] } },
         select: { id: true },
       });
-      staff.forEach((member) => {
-        if (member.id !== user.id) {
-          notify(
-            member.id,
-            "Nuevo Ticket",
-            `Ticket #${ticket.subject} creado por ${user.name || "Usuario"}`,
-            "INFO"
-          );
-        }
-      });
+
+      const notifications = staff
+        .filter((member) => member.id !== user.id)
+        .map((member) => ({
+          recipientId: member.id,
+          title: "Nuevo Ticket",
+          message: `Ticket #${ticket.subject} creado por ${user.name || "Usuario"}`,
+          type: "INFO" as const,
+        }));
+
+      if (notifications.length > 0) {
+        await notifyMany(notifications);
+      }
     } catch (e) {
       console.error("Notification error", e);
     }
