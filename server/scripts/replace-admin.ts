@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const oldEmail = "admin@puntonet.com";
-  const newEmail = "superadmin@puntonet.com";
-  const password = "Admin123!Secure"; // Temporary secure password
+  const oldEmail = process.env.OLD_ADMIN_EMAIL || "admin@puntonet.com";
+  const newEmail = process.env.NEW_ADMIN_EMAIL || "superadmin@puntonet.com";
+  const password = process.env.ADMIN_TEMP_PASSWORD || "AdminTemporal2026!"; // Configurable temporary password
 
   console.log(`🚀 Starting Admin Replacement Operation...`);
 

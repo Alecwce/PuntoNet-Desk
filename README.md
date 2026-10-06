@@ -1,8 +1,24 @@
-# PuntoNet Service Desk 🚀
+<div align="center">
+  <h1>🚀 PuntoNet Service Desk</h1>
+  <p><strong>Mesa de Ayuda Empresarial basada en ITIL 4 con Gestión de Incidentes, Base de Conocimiento y Autenticación JWT</strong></p>
+  <p>
+    <img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/React_18-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node" />
+    <img src="https://img.shields.io/badge/Prisma_ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+    <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="Postgres" />
+    <img src="https://img.shields.io/badge/ITIL_4-Compliant-FF6C37?style=for-the-badge" alt="ITIL 4" />
+  </p>
+</div>
 
-Un sistema moderno de Mesa de Ayuda (Service Desk) diseñado para optimizar la gestión de tickets, clientes y base de conocimientos, siguiendo principios de ITIL 4.
+---
 
-## ✨ Características Principales
+## 📌 Descripción General
+
+**PuntoNet Service Desk** es una plataforma integral de Mesa de Ayuda diseñada bajo estándares y principios de **ITIL 4**. Permite centralizar la recepción, priorización, asignación y resolución de incidencias y requerimientos operativos, integrando autenticación por roles (RBAC), base de conocimiento autoservicio y métricas de rendimiento en tiempo real.
+
+---
 
 ### 🔐 Autenticación y Seguridad
 

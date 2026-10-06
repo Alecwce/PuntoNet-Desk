@@ -20,8 +20,8 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  const email = "admin@puntonet.com";
-  const newPassword = "PuntoNet2024!Admin"; // New temporary password
+  const email = process.env.ADMIN_EMAIL || "admin@puntonet.com";
+  const newPassword = process.env.ADMIN_TEMP_PASSWORD || "AdminTemporal2026!"; // Configurable temporary password
 
   console.log(`🚀 Connecting to production database...`);
   console.log(`📧 Target: ${email}`);

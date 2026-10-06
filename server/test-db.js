@@ -1,8 +1,7 @@
 const { Client } = require("pg");
 
 const client = new Client({
-  connectionString:
-    "postgresql://postgres:123456@localhost:5432/postgres?schema=public",
+  connectionString: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/postgres?schema=public",
 });
 
 client
