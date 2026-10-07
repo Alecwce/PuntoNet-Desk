@@ -9,6 +9,7 @@
     <img src="https://img.shields.io/badge/Prisma_ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
     <img src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" alt="Postgres" />
     <img src="https://img.shields.io/badge/ITIL_4-Compliant-FF6C37?style=for-the-badge" alt="ITIL 4" />
+    <img src="https://img.shields.io/github/actions/workflow/status/Alecwce/PuntoNet-Desk/ci.yml?branch=main&style=for-the-badge&logo=github-actions&logoColor=white&label=CI%20Pipeline" alt="CI Status" />
   </p>
 </div>
 

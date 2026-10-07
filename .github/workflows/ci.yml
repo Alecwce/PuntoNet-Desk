@@ -1,0 +1,48 @@
+name: CI / Quality & Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test (Frontend + Backend)
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/puntonet_desk?schema=public"
+      JWT_SECRET: "ci_test_super_secret_jwt_key_12345"
+      VITE_API_URL: "http://localhost:3001/api"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Frontend Dependencies
+        run: npm install
+
+      - name: Install Backend Dependencies
+        working-directory: server
+        run: npm install
+
+      - name: Generate Prisma Client
+        working-directory: server
+        run: npx prisma generate
+
+      - name: Run Client Tests
+        run: npx vitest run
+
+      - name: Run Server Tests
+        working-directory: server
+        run: npx vitest run
+
+      - name: Build Frontend
+        run: npm run build
